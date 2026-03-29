@@ -1,0 +1,55 @@
+name: survival_game
+description: "A simple survival game built with Flame."
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+    sdk: ^3.11.3
+
+dependencies:
+    flame: ^1.36.0
+    flutter:
+        sdk: flutter
+
+dev_dependencies:
+    flutter_test:
+        sdk: flutter
+    flutter_lints: ^6.0.0
+
+flutter:
+    uses-material-design: true
+    assets:
+        - assets/images/elements/crops/
+        - assets/images/elements/other/
+        - assets/images/spritesheets/elements/animals/
+        - assets/images/spritesheets/elements/other/
+        - assets/images/spritesheets/elements/plants/
+        - assets/images/spritesheets/elements/vfx/chimney_smoke/
+        - assets/images/spritesheets/elements/vfx/fire/
+        - assets/images/spritesheets/elements/vfx/glint/
+        - assets/images/spritesheets/elements/vfx/organic/
+        - assets/images/spritesheets/entities/goblin/
+        - assets/images/spritesheets/entities/human/attack/
+        - assets/images/spritesheets/entities/human/carry/
+        - assets/images/spritesheets/entities/human/cast/
+        - assets/images/spritesheets/entities/human/catch/
+        - assets/images/spritesheets/entities/human/chop/
+        - assets/images/spritesheets/entities/human/death/
+        - assets/images/spritesheets/entities/human/dig/
+        - assets/images/spritesheets/entities/human/hammer/
+        - assets/images/spritesheets/entities/human/hurt/
+        - assets/images/spritesheets/entities/human/idle/
+        - assets/images/spritesheets/entities/human/interact/
+        - assets/images/spritesheets/entities/human/jump/
+        - assets/images/spritesheets/entities/human/mine/
+        - assets/images/spritesheets/entities/human/reel/
+        - assets/images/spritesheets/entities/human/roll/
+        - assets/images/spritesheets/entities/human/run/
+        - assets/images/spritesheets/entities/human/swim/
+        - assets/images/spritesheets/entities/human/wait/
+        - assets/images/spritesheets/entities/human/walk/
+        - assets/images/spritesheets/entities/human/water/
+        - assets/images/spritesheets/entities/skeleton/
+        - assets/images/tilesets/
+        - assets/images/ui/elements/
+        - assets/images/ui/nine_slice/
