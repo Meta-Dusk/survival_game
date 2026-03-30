@@ -1,4 +1,4 @@
-import 'package:survival_game/player.dart';
+import 'package:survival_game/components/player_component.dart';
 
 /// Dataclass for asset paths `String` literals.
 class Assets {

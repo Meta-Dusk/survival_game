@@ -39,15 +39,20 @@ class HotbarUi extends StatelessWidget {
               width: isActive ? 2 : 1,
             );
 
-            return Container(
-              width: 54,
-              height: 54,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                border: border,
+            return GestureDetector(
+              onTap: () {
+                player.inventory.setSlot(index);
+              },
+              child: Container(
+                width: 54,
+                height: 54,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  border: border,
+                ),
+                child: Center(child: getIcon(item)),
               ),
-              child: Center(child: getIcon(item)),
             );
           }),
         );

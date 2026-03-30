@@ -1,67 +1,15 @@
+import 'package:flame/camera.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:survival_game/core/game_assets.dart';
-import 'package:survival_game/game.dart';
+import 'package:survival_game/components/player_component.dart';
 import 'package:survival_game/hitboxes.dart';
-import 'package:survival_game/inventory.dart';
 import 'package:survival_game/item.dart';
 import 'package:survival_game/tree.dart';
 
-enum PlayerState {
-  attacking,
-  carrying,
-  casting,
-  catching,
-  chopping,
-  death,
-  digging,
-  hammering,
-  hurt,
-  idle,
-  interacting,
-  jumping,
-  mining,
-  reeling,
-  rolling,
-  running,
-  swimming,
-  waiting,
-  walking,
-  watering,
-}
-
-Set loopingStates = {
-  PlayerState.idle,
-  PlayerState.running,
-  PlayerState.walking,
-};
-
-class PlayerSpriteLayer extends SpriteAnimationGroupComponent<PlayerState> {
-  PlayerSpriteLayer({super.size, super.current, super.animations})
-    : super(paint: Paint()..isAntiAlias = false);
-
-  // @override
-  // void render(Canvas canvas) {
-  //   animationTickers?[current]?.getSprite().render(
-  //     canvas,
-  //     size: size,
-  //     overridePaint: paint,
-  //   );
-  //   super.render(canvas);
-  // }
-}
-
-class Player extends PositionComponent
-    with KeyboardHandler, HasGameReference<SurvivalGame>, CollisionCallbacks {
-  Vector2 velocity = Vector2.zero();
-  final double moveSpeed = 75.0;
-  final List<PlayerSpriteLayer> _layers = [];
-  PlayerState current = PlayerState.idle;
-  final Inventory inventory = Inventory();
-  final int hotbarSize = 5;
+class Player extends PlayerComponent {
   static const List<LogicalKeyboardKey> _hotbarKeys = [
     LogicalKeyboardKey.digit1,
     LogicalKeyboardKey.digit2,
@@ -72,85 +20,26 @@ class Player extends PositionComponent
     LogicalKeyboardKey.digit7,
     LogicalKeyboardKey.digit8,
     LogicalKeyboardKey.digit9,
+    LogicalKeyboardKey.digit0,
   ];
 
   bool _isActionKeyPressed = false;
   bool _canAct = true;
   bool _isActing = false;
   bool _isRunning = false;
+  bool _isRolling = false;
+  bool _isDamageImmune = false;
+  // bool _isJumping = false;
 
-  late WeaponHitbox _weaponHitbox;
   Vector2 _lastPosition = Vector2.zero();
-
-  Future<SpriteAnimation> _createAnimation(
-    String path, {
-    int? amount,
-    bool loop = true,
-  }) async {
-    final image = await game.images.load(path);
-    final spriteSheet = SpriteSheet(image: image, srcSize: size);
-
-    return spriteSheet.createAnimation(
-      row: 0,
-      stepTime: 0.1,
-      to: amount ?? getFrames(path),
-      loop: loop,
-    );
-  }
-
-  int getFrames(String path) {
-    final split = path.split("_");
-    final suffix = split.last.split(".");
-    final strip = suffix.first.split("strip");
-    return int.parse(strip.last);
-  }
-
-  Future<void> _addLayer(PlayerAnimationSet assetSet) async {
-    final Map<PlayerState, SpriteAnimation> loadedAnimations = {};
-
-    for (var entry in assetSet.asMap.entries) {
-      final state = entry.key;
-      final path = entry.value;
-
-      loadedAnimations[state] = await _createAnimation(
-        path,
-        loop: loopingStates.contains(state),
-      );
-    }
-
-    final layer = PlayerSpriteLayer(
-      size: size,
-      current: PlayerState.idle,
-      animations: loadedAnimations,
-    );
-
-    _layers.add(layer);
-    add(layer);
-  }
+  Vector2 _rollDirection = Vector2.zero();
+  final double rollSpeedMultiplier = 2.0;
 
   @override
   Future<void> onLoad() async {
-    size = Vector2(96, 64);
-    anchor = Anchor.center;
+    await super.onLoad();
 
-    await _addLayer(Assets.entities.player.base);
-    await _addLayer(Assets.entities.player.hair.bowlHair);
-    await _addLayer(Assets.entities.player.tools);
-
-    add(
-      RectangleHitbox(
-        size: Vector2(8, 8),
-        position: Vector2(size.x / 2 - 4, size.y / 2),
-      ),
-    );
-
-    _weaponHitbox = WeaponHitbox()
-      ..size = Vector2(27, 25)
-      ..position = Vector2(size.x / 2 - 2, 15);
-
-    add(_weaponHitbox);
-
-    inventory.slots.first = Equipment(
+    inventory.slots[0] = Equipment(
       id: "iron_sword",
       name: "Iron Sword",
       category: ItemCategory.weapon,
@@ -164,12 +53,25 @@ class Player extends PositionComponent
       damageType: DamageType.chopping,
       animationState: PlayerState.chopping,
     );
+
+    inventory.slots[2] = Equipment.tool(
+      id: "iron_pickaxe",
+      name: "Iron Pickaxe",
+      damageType: DamageType.mining,
+      animationState: PlayerState.mining,
+    );
+  }
+
+  void addCameraZoom(double value) {
+    Viewfinder viewFinder = game.camera.viewfinder;
+    viewFinder.zoom = (viewFinder.zoom + value).clamp(3.0, 6.0);
+    debugPrint("Setting camera viewfinder zoom to: ${viewFinder.zoom}");
   }
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     velocity = Vector2.zero();
-    final double step = 1.0;
+    double step = 1.0;
 
     _isActionKeyPressed = keysPressed.contains(LogicalKeyboardKey.keyF);
     if (!_isActionKeyPressed) _canAct = true;
@@ -181,10 +83,9 @@ class Player extends PositionComponent
       }
     }
 
-    if (!_isActing) {
-      _isRunning = keysPressed.contains(LogicalKeyboardKey.shiftLeft)
-          ? true
-          : false;
+    if (!_isActing && !_isRolling) {
+      _isRunning = keysPressed.contains(LogicalKeyboardKey.shiftLeft);
+
       if (keysPressed.contains(LogicalKeyboardKey.keyW)) velocity.y = -step;
       if (keysPressed.contains(LogicalKeyboardKey.keyS)) velocity.y = step;
       if (keysPressed.contains(LogicalKeyboardKey.keyA)) velocity.x = -step;
@@ -192,9 +93,18 @@ class Player extends PositionComponent
 
       if (velocity.x != 0 || velocity.y != 0) {
         velocity.normalize();
-        if (_isRunning) velocity.scale(1.5);
+        if (_isRunning) {
+          velocity.scale(1.5);
+        }
+        if (keysPressed.contains(LogicalKeyboardKey.keyV)) {
+          _isRolling = true;
+          _rollDirection = velocity.clone();
+        }
       }
     }
+
+    if (keysPressed.contains(LogicalKeyboardKey.equal)) addCameraZoom(0.5);
+    if (keysPressed.contains(LogicalKeyboardKey.minus)) addCameraZoom(-0.5);
 
     return super.onKeyEvent(event, keysPressed);
   }
@@ -204,10 +114,10 @@ class Player extends PositionComponent
     final movementStates = {PlayerState.running, PlayerState.walking};
     int? currentFrame;
     if (movementStates.containsAll([current, newState])) {
-      currentFrame = _layers.first.animationTicker?.currentIndex;
+      currentFrame = layers.first.animationTicker?.currentIndex;
     }
     current = newState;
-    for (var layer in _layers) {
+    for (var layer in layers) {
       layer.current = newState;
       if (currentFrame != null) {
         layer.animationTicker?.currentIndex = currentFrame;
@@ -218,7 +128,7 @@ class Player extends PositionComponent
   @override
   void update(double dt) {
     _lastPosition = position.clone();
-    _weaponHitbox.isDamageActive = false;
+    weaponHitbox.isDamageActive = false;
 
     final holding = inventory.activeItem;
     bool canSwing = false;
@@ -230,33 +140,56 @@ class Player extends PositionComponent
 
     if (_isActionKeyPressed && !_isActing && _canAct && canSwing) {
       _isActing = true;
-      _weaponHitbox.resetSwing();
+      weaponHitbox.resetSwing();
       if (holding?.autoSwing == false) _canAct = false;
       final targetState = holding?.animationState ?? PlayerState.attacking;
-      for (var layer in _layers) {
+      for (var layer in layers) {
         layer.animationTickers?[targetState]?.reset();
       }
     }
 
-    if (_isActing) {
+    if (_isRolling) {
+      _setState(PlayerState.rolling);
+      SpriteAnimationTicker? ticker;
+      double currentSpeed = moveSpeed;
+
+      if (layers.isNotEmpty) ticker = layers.first.animationTickers?[current];
+
+      if (ticker != null) {
+        if (ticker.currentIndex >= 2 && ticker.currentIndex <= 5) {
+          currentSpeed = moveSpeed * rollSpeedMultiplier;
+          _isDamageImmune = true;
+          debugPrint("Player damage immunity: $_isDamageImmune");
+        } else {
+          _isDamageImmune = false;
+          debugPrint("Player damage immunity: $_isDamageImmune");
+        }
+      }
+
+      if (ticker?.done() == true) {
+        _isRolling = false;
+        _setState(PlayerState.idle);
+      }
+      position += _rollDirection * currentSpeed * dt;
+    } else if (_isActing) {
       final targetState = holding?.animationState ?? PlayerState.attacking;
-      _weaponHitbox.currentDamageType =
+      weaponHitbox.currentDamageType =
           holding?.damageType ?? DamageType.unarmed;
       _setState(targetState);
 
       SpriteAnimationTicker? ticker;
-      if (_layers.isNotEmpty) ticker = _layers.first.animationTickers?[current];
+      if (layers.isNotEmpty) ticker = layers.first.animationTickers?[current];
 
       if (ticker != null) {
         if (ticker.currentIndex >= 5 && ticker.currentIndex <= 6) {
-          _weaponHitbox.isDamageActive = true;
+          weaponHitbox.isDamageActive = true;
         } else {
-          _weaponHitbox.isDamageActive = false;
+          weaponHitbox.isDamageActive = false;
         }
       }
       if (ticker?.done() == true) {
         _isActing = false;
-        _weaponHitbox.isDamageActive = false;
+        weaponHitbox.isDamageActive = false;
         _setState(PlayerState.idle);
       }
     } else {
@@ -275,8 +208,6 @@ class Player extends PositionComponent
 
     final feetY = position.y + (size.y / 2);
     priority = feetY.toInt();
-
-    super.update(dt);
   }
 
   @override
