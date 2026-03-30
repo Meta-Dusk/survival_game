@@ -15,6 +15,7 @@ class SurvivalGame extends FlameGame
 
     final dummyTree = Tree(position: player.position + Vector2(32, 0));
     world.add(dummyTree);
+    pauseEngine();
   }
 
   @override
