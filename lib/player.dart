@@ -1,6 +1,10 @@
+import 'dart:math';
+
 import 'package:flame/camera.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/extensions.dart';
+import 'package:flame/particles.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
@@ -29,11 +33,12 @@ class Player extends PlayerComponent {
   bool _isRunning = false;
   bool _isRolling = false;
   bool _isDamageImmune = false;
-  // bool _isJumping = false;
+  bool _isJumping = false;
 
   Vector2 _lastPosition = Vector2.zero();
   Vector2 _rollDirection = Vector2.zero();
   final double rollSpeedMultiplier = 2.0;
+  int _lastAnimationFrame = -1;
 
   @override
   Future<void> onLoad() async {
@@ -79,6 +84,7 @@ class Player extends PlayerComponent {
     for (int i = 0; i < hotbarSize && i < _hotbarKeys.length; i++) {
       if (keysPressed.contains(_hotbarKeys[i])) {
         inventory.setSlot(i);
+        weaponHitbox.resetSwing();
         break;
       }
     }
@@ -93,14 +99,16 @@ class Player extends PlayerComponent {
 
       if (velocity.x != 0 || velocity.y != 0) {
         velocity.normalize();
-        if (_isRunning) {
-          velocity.scale(1.5);
-        }
-        if (keysPressed.contains(LogicalKeyboardKey.keyV)) {
+        if (_isRunning) velocity.scale(1.5);
+        if (keysPressed.contains(LogicalKeyboardKey.keyV) && !_isJumping) {
           _isRolling = true;
           _rollDirection = velocity.clone();
         }
       }
+    }
+
+    if (keysPressed.contains(LogicalKeyboardKey.space) && !_isJumping) {
+      _isJumping = true;
     }
 
     if (keysPressed.contains(LogicalKeyboardKey.equal)) addCameraZoom(0.5);
@@ -148,6 +156,7 @@ class Player extends PlayerComponent {
       }
     }
 
+    // Rolling or Dodging
     if (_isRolling) {
       _setState(PlayerState.rolling);
       SpriteAnimationTicker? ticker;
@@ -158,19 +167,38 @@ class Player extends PlayerComponent {
       if (ticker != null) {
         if (ticker.currentIndex >= 2 && ticker.currentIndex <= 5) {
           currentSpeed = moveSpeed * rollSpeedMultiplier;
-          _isDamageImmune = true;
-          debugPrint("Player damage immunity: $_isDamageImmune");
+          _setDamageImmune(true);
         } else {
-          _isDamageImmune = false;
-          debugPrint("Player damage immunity: $_isDamageImmune");
+          _setDamageImmune(false);
         }
       }
 
       if (ticker?.done() == true) {
         _isRolling = false;
         _setState(PlayerState.idle);
+        _setDamageImmune(false);
       }
       position += _rollDirection * currentSpeed * dt;
+
+      // Jumping
+    } else if (_isJumping) {
+      _setState(PlayerState.jumping);
+      SpriteAnimationTicker? ticker;
+      if (layers.isNotEmpty) ticker = layers.first.animationTickers?[current];
+
+      position += velocity * moveSpeed * dt;
+
+      if ((velocity.x < 0 && !isFlippedHorizontally) ||
+          (velocity.x > 0 && isFlippedHorizontally)) {
+        flipHorizontally();
+      }
+
+      if (ticker?.done() == true) {
+        _isJumping = false;
+        _setState(PlayerState.idle);
+      }
+
+      // Using Equipment
     } else if (_isActing) {
       final targetState = holding?.animationState ?? PlayerState.attacking;
       weaponHitbox.currentDamageType =
@@ -192,6 +220,8 @@ class Player extends PlayerComponent {
         weaponHitbox.isDamageActive = false;
         _setState(PlayerState.idle);
       }
+
+      // Walking or Running
     } else {
       position += velocity * moveSpeed * dt;
 
@@ -208,6 +238,40 @@ class Player extends PlayerComponent {
 
     final feetY = position.y + (size.y / 2);
     priority = feetY.toInt();
+    animationParticles();
+  }
+
+  void animationParticles() {
+    SpriteAnimationTicker? currentTicker;
+    if (layers.isNotEmpty) {
+      currentTicker = layers.first.animationTickers?[current];
+    }
+    if (currentTicker == null) return;
+
+    int currentFrame = currentTicker.currentIndex;
+    if (currentFrame == _lastAnimationFrame) return;
+
+    if (current == PlayerState.running) {
+      final Set<int> stepFrames = {0, 2, 4, 6};
+      if (stepFrames.contains(currentFrame)) {
+        // Loud footstep SFX here
+        _spawnDust();
+      }
+    } else if (current == PlayerState.jumping) {
+      final Set<int> stepFrames = {2, 8};
+      if (stepFrames.contains(currentFrame)) {
+        // Jump SFX here
+        _spawnDust(count: 5);
+      }
+    } else if (current == PlayerState.rolling) {
+      final Set<int> stepFrames = {2, 5};
+      if (stepFrames.contains(currentFrame)) {
+        // Rolling SFX here
+        _spawnDust(count: 10, range: 6.0);
+      }
+    }
+
+    _lastAnimationFrame = currentFrame;
   }
 
   @override
@@ -263,6 +327,58 @@ class Player extends PlayerComponent {
           position.y = _lastPosition.y;
         }
       }
+    }
+  }
+
+  void _spawnDust({int count = 3, double range = 3.0}) {
+    Particle generator = Particle.generate(
+      count: count,
+      lifespan: 0.3,
+      generator: (i) {
+        // Slight random spread, floating slightly upwards
+        final randomVelocity = Vector2(
+          (Random().nextDouble() - 0.5) * 50,
+          -Random().nextDouble() * 30,
+        );
+
+        return AcceleratedParticle(
+          position: Vector2(Random().nextDoubleBetween(-range, range), 0),
+          speed: randomVelocity,
+          child: ComputedParticle(
+            renderer: (canvas, particle) {
+              final paint = Paint()
+                // Start at 50% opacity and fade to 0
+                ..color = Colors.white.withValues(
+                  alpha: (1.0 - particle.progress) * 0.5,
+                );
+              canvas.drawRect(
+                Rect.fromCenter(center: Offset.zero, width: 2, height: 2),
+                paint,
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    game.world.add(
+      ParticleSystemComponent(
+        position: position.clone() + Vector2(0, size.y / 4 - 8),
+        particle: generator,
+        anchor: Anchor.bottomCenter,
+        priority: priority + 1,
+      ),
+    );
+  }
+
+  void _setDamageImmune(bool immune) {
+    if (_isDamageImmune == immune) return;
+    _isDamageImmune = immune;
+
+    if (immune) {
+      setTint(Colors.grey.shade400.withValues(alpha: 0.35));
+    } else {
+      removeTint();
     }
   }
 }

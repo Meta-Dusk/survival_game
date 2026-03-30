@@ -134,4 +134,16 @@ class PlayerComponent extends PositionComponent
       ..position = Vector2(size.x / 2 - 2, 15);
     add(weaponHitbox);
   }
+
+  void setTint(Color color) {
+    for (var layer in layers) {
+      layer.paint.colorFilter = ColorFilter.mode(color, BlendMode.srcATop);
+    }
+  }
+
+  void removeTint() {
+    for (var layer in layers) {
+      layer.paint.colorFilter = null;
+    }
+  }
 }
