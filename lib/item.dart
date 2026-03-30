@@ -21,6 +21,7 @@ class Item {
   final DamageType? damageType;
   final PlayerState? animationState;
   final bool autoSwing;
+  final String? iconPath;
 
   Item({
     required this.id,
@@ -31,5 +32,36 @@ class Item {
     this.damageType,
     this.animationState,
     this.autoSwing = false,
+    this.iconPath,
   });
+}
+
+class Equipment extends Item {
+  int currentDurability;
+  final int maxDurability;
+  final int defense;
+
+  Equipment({
+    required super.id,
+    required super.name,
+    required super.category,
+    super.maxStack = 1,
+    super.autoSwing = false,
+    super.damageType,
+    super.animationState,
+    this.maxDurability = 100,
+    this.defense = 0,
+  }) : currentDurability = maxDurability;
+
+  Equipment.tool({
+    required super.id,
+    required super.name,
+    super.category = ItemCategory.tool,
+    super.maxStack = 1,
+    super.autoSwing = true,
+    super.damageType,
+    super.animationState,
+    this.maxDurability = 100,
+    this.defense = 0,
+  }) : currentDurability = maxDurability;
 }

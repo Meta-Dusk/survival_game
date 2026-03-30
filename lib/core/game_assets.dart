@@ -39,11 +39,26 @@ abstract class PlayerAnimationSet {
   String get watering => "${path}water/${prefix}_watering_strip5.png";
 
   Map<PlayerState, String> get asMap => {
-    PlayerState.idle: idle,
-    PlayerState.running: running,
     PlayerState.attacking: attacking,
-    PlayerState.mining: mining,
+    PlayerState.carrying: carrying,
+    PlayerState.casting: casting,
+    PlayerState.catching: catching,
     PlayerState.chopping: chopping,
+    PlayerState.death: death,
+    PlayerState.digging: digging,
+    PlayerState.hammering: hammering,
+    PlayerState.hurt: hurt,
+    PlayerState.idle: idle,
+    PlayerState.interacting: interacting,
+    PlayerState.jumping: jumping,
+    PlayerState.mining: mining,
+    PlayerState.reeling: reeling,
+    PlayerState.rolling: rolling,
+    PlayerState.running: running,
+    PlayerState.swimming: swimming,
+    PlayerState.waiting: waiting,
+    PlayerState.walking: walking,
+    PlayerState.watering: watering,
   };
 }
 
@@ -88,7 +103,7 @@ class _Vfx {
   final chimneySmoke = const _ChimneySmoke();
   final fire = const _Fire();
   final glint = const _Glint();
-  final organnic = const _Organic();
+  final organic = const _Organic();
 }
 
 class _Ui {
@@ -202,12 +217,13 @@ class _Organic {
   const _Organic();
 
   final String leavesHit =
-      "spritesheets/elements/vfx/organic/leaves_hit_strip34.png";
+      "spritesheets/elements/vfx/organic/leaves_hit_strip10.png";
 }
 
 class _Crops {
   const _Crops();
   final String wood = "elements/crops/wood.png";
+  final String egg = "elements/crops/egg.png";
 }
 
 //* UI Elements

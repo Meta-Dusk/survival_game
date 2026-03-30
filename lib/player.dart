@@ -33,6 +33,12 @@ enum PlayerState {
   watering,
 }
 
+Set loopingStates = {
+  PlayerState.idle,
+  PlayerState.running,
+  PlayerState.walking,
+};
+
 class PlayerSpriteLayer extends SpriteAnimationGroupComponent<PlayerState> {
   PlayerSpriteLayer({super.size, super.current, super.animations})
     : super(paint: Paint()..isAntiAlias = false);
@@ -55,10 +61,23 @@ class Player extends PositionComponent
   final List<PlayerSpriteLayer> _layers = [];
   PlayerState current = PlayerState.idle;
   final Inventory inventory = Inventory();
+  final int hotbarSize = 5;
+  static const List<LogicalKeyboardKey> _hotbarKeys = [
+    LogicalKeyboardKey.digit1,
+    LogicalKeyboardKey.digit2,
+    LogicalKeyboardKey.digit3,
+    LogicalKeyboardKey.digit4,
+    LogicalKeyboardKey.digit5,
+    LogicalKeyboardKey.digit6,
+    LogicalKeyboardKey.digit7,
+    LogicalKeyboardKey.digit8,
+    LogicalKeyboardKey.digit9,
+  ];
 
   bool _isActionKeyPressed = false;
   bool _canAct = true;
   bool _isActing = false;
+  bool _isRunning = false;
 
   late WeaponHitbox _weaponHitbox;
   Vector2 _lastPosition = Vector2.zero();
@@ -95,7 +114,7 @@ class Player extends PositionComponent
 
       loadedAnimations[state] = await _createAnimation(
         path,
-        loop: state == PlayerState.idle || state == PlayerState.running,
+        loop: loopingStates.contains(state),
       );
     }
 
@@ -131,7 +150,7 @@ class Player extends PositionComponent
 
     add(_weaponHitbox);
 
-    inventory.slots[0] = Item(
+    inventory.slots.first = Equipment(
       id: "iron_sword",
       name: "Iron Sword",
       category: ItemCategory.weapon,
@@ -139,34 +158,42 @@ class Player extends PositionComponent
       animationState: PlayerState.attacking,
     );
 
-    inventory.slots[1] = Item(
+    inventory.slots[1] = Equipment.tool(
       id: "iron_axe",
       name: "Iron Axe",
-      category: ItemCategory.tool,
       damageType: DamageType.chopping,
       animationState: PlayerState.chopping,
-      autoSwing: true,
     );
   }
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     velocity = Vector2.zero();
+    final double step = 1.0;
 
-    _isActionKeyPressed = keysPressed.contains(LogicalKeyboardKey.space);
+    _isActionKeyPressed = keysPressed.contains(LogicalKeyboardKey.keyF);
     if (!_isActionKeyPressed) _canAct = true;
 
-    if (keysPressed.contains(LogicalKeyboardKey.digit1)) inventory.setSlot(0);
-    if (keysPressed.contains(LogicalKeyboardKey.digit2)) inventory.setSlot(1);
-    if (keysPressed.contains(LogicalKeyboardKey.digit3)) inventory.setSlot(2);
+    for (int i = 0; i < hotbarSize && i < _hotbarKeys.length; i++) {
+      if (keysPressed.contains(_hotbarKeys[i])) {
+        inventory.setSlot(i);
+        break;
+      }
+    }
 
     if (!_isActing) {
-      if (keysPressed.contains(LogicalKeyboardKey.keyW)) velocity.y = -1;
-      if (keysPressed.contains(LogicalKeyboardKey.keyS)) velocity.y = 1;
-      if (keysPressed.contains(LogicalKeyboardKey.keyA)) velocity.x = -1;
-      if (keysPressed.contains(LogicalKeyboardKey.keyD)) velocity.x = 1;
+      _isRunning = keysPressed.contains(LogicalKeyboardKey.shiftLeft)
+          ? true
+          : false;
+      if (keysPressed.contains(LogicalKeyboardKey.keyW)) velocity.y = -step;
+      if (keysPressed.contains(LogicalKeyboardKey.keyS)) velocity.y = step;
+      if (keysPressed.contains(LogicalKeyboardKey.keyA)) velocity.x = -step;
+      if (keysPressed.contains(LogicalKeyboardKey.keyD)) velocity.x = step;
 
-      if (velocity.x != 0 || velocity.y != 0) velocity.normalize();
+      if (velocity.x != 0 || velocity.y != 0) {
+        velocity.normalize();
+        if (_isRunning) velocity.scale(1.5);
+      }
     }
 
     return super.onKeyEvent(event, keysPressed);
@@ -174,17 +201,24 @@ class Player extends PositionComponent
 
   void _setState(PlayerState newState) {
     if (current == newState) return;
+    final movementStates = {PlayerState.running, PlayerState.walking};
+    int? currentFrame;
+    if (movementStates.containsAll([current, newState])) {
+      currentFrame = _layers.first.animationTicker?.currentIndex;
+    }
     current = newState;
     for (var layer in _layers) {
       layer.current = newState;
+      if (currentFrame != null) {
+        layer.animationTicker?.currentIndex = currentFrame;
+      }
     }
   }
 
   @override
   void update(double dt) {
     _lastPosition = position.clone();
-    SpriteAnimationTicker? ticker;
-    if (_layers.isNotEmpty) ticker = _layers.first.animationTickers?[current];
+    _weaponHitbox.isDamageActive = false;
 
     final holding = inventory.activeItem;
     bool canSwing = false;
@@ -198,6 +232,10 @@ class Player extends PositionComponent
       _isActing = true;
       _weaponHitbox.resetSwing();
       if (holding?.autoSwing == false) _canAct = false;
+      final targetState = holding?.animationState ?? PlayerState.attacking;
+      for (var layer in _layers) {
+        layer.animationTickers?[targetState]?.reset();
+      }
     }
 
     if (_isActing) {
@@ -205,6 +243,9 @@ class Player extends PositionComponent
       _weaponHitbox.currentDamageType =
           holding?.damageType ?? DamageType.unarmed;
       _setState(targetState);
+
+      SpriteAnimationTicker? ticker;
+      if (_layers.isNotEmpty) ticker = _layers.first.animationTickers?[current];
 
       if (ticker != null) {
         if (ticker.currentIndex >= 5 && ticker.currentIndex <= 6) {
@@ -224,10 +265,9 @@ class Player extends PositionComponent
       if (velocity.isZero()) {
         _setState(PlayerState.idle);
       } else {
-        _setState(PlayerState.running);
-        if (velocity.x < 0 && !isFlippedHorizontally) {
-          flipHorizontally();
-        } else if (velocity.x > 0 && isFlippedHorizontally) {
+        _setState(_isRunning ? PlayerState.running : PlayerState.walking);
+        if ((velocity.x < 0 && !isFlippedHorizontally) ||
+            (velocity.x > 0 && isFlippedHorizontally)) {
           flipHorizontally();
         }
       }

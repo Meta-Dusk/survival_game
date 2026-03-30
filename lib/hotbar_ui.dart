@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:survival_game/item.dart';
 import 'package:survival_game/player.dart';
 
 class HotbarUi extends StatelessWidget {
   final Player player;
 
   const HotbarUi({super.key, required this.player});
+
+  Widget getIcon(Item? item) {
+    if (item == null || item.iconPath == null) {
+      return Text(
+        item?.name ?? "",
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          decoration: TextDecoration.none,
+        ),
+        textAlign: TextAlign.center,
+      );
+    }
+    return Image.asset("assets/images/${item.iconPath}");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +30,7 @@ class HotbarUi extends StatelessWidget {
       builder: (context, activeIndex, child) {
         return Row(
           mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (index) {
+          children: List.generate(player.hotbarSize, (index) {
             final item = player.inventory.slots[index];
             final isActive = index == activeIndex;
 
@@ -30,18 +47,7 @@ class HotbarUi extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.6),
                 border: border,
               ),
-              child: Center(
-                child: Text(
-                  item?.name ?? "",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.none,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+              child: Center(child: getIcon(item)),
             );
           }),
         );

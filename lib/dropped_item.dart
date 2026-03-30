@@ -10,33 +10,47 @@ import 'package:survival_game/player.dart';
 
 class DroppedItem extends SpriteComponent
     with CollisionCallbacks, HasGameReference<SurvivalGame> {
-  final Item itemData;
+  final Item item;
 
-  DroppedItem({required this.itemData, required super.position})
+  DroppedItem({required this.item, required super.position})
     : super(size: Vector2(11, 11), anchor: Anchor.center);
 
   double getRandomAmount(int scale) {
     final randomSign = Random().nextBool() ? 1 : -1;
-    return (Random().nextDouble() - 0.5) * scale * randomSign;
+    return (Random().nextDouble()) * scale * randomSign;
   }
 
   @override
   Future<void> onLoad() async {
-    sprite = await game.loadSprite(Assets.elements.crops.wood);
+    sprite = await game.loadSprite(item.iconPath ?? Assets.elements.crops.egg);
     add(RectangleHitbox(collisionType: CollisionType.passive));
 
     scale = Vector2.zero();
     add(
-      ScaleEffect.to(
-        Vector2.all(1.0),
-        EffectController(duration: 0.3, curve: Curves.easeOutBack),
-      ),
-    );
-
-    add(
-      MoveEffect.by(
-        Vector2(getRandomAmount(32), getRandomAmount(16)),
-        EffectController(duration: 0.2, curve: Curves.easeOut),
+      SequenceEffect(
+        [
+          ScaleEffect.to(
+            Vector2.all(1.0),
+            EffectController(duration: 0.3, curve: Curves.easeOutBack),
+          ),
+          MoveEffect.by(
+            Vector2(getRandomAmount(32), getRandomAmount(16)),
+            EffectController(duration: 0.2, curve: Curves.easeOut),
+          ),
+        ],
+        onComplete: () {
+          add(
+            MoveByEffect(
+              Vector2(0, -4),
+              EffectController(
+                duration: 1.0,
+                alternate: true,
+                infinite: true,
+                curve: Curves.easeInOut,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -49,7 +63,7 @@ class DroppedItem extends SpriteComponent
     super.onCollisionStart(intersectionPoints, other);
 
     if (other is Player) {
-      debugPrint("Picked up ${itemData.name}!");
+      debugPrint("Picked up ${item.name}!");
       removeFromParent();
     }
   }

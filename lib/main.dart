@@ -1,5 +1,6 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:survival_game/core/game_overlays.dart';
 import 'package:survival_game/game.dart';
 import 'package:survival_game/hotbar_ui.dart';
 
@@ -12,11 +13,11 @@ void main() {
         body: GameWidget(
           game: game,
           overlayBuilderMap: {
-            "HotbarOverlay": (BuildContext context, SurvivalGame game) {
+            GameOverlays.hotbar: (BuildContext context, SurvivalGame game) {
               return HotbarUi(player: game.player);
             },
           },
-          initialActiveOverlays: const ["HotbarOverlay"],
+          initialActiveOverlays: const [GameOverlays.hotbar],
         ),
       ),
     ),

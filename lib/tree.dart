@@ -13,7 +13,7 @@ import 'package:survival_game/item.dart';
 
 class Tree extends PositionComponent
     with CollisionCallbacks, HasGameReference<SurvivalGame> {
-  int health = 3;
+  int health = 5;
   late PositionComponent _visual;
 
   Tree({super.position});
@@ -48,11 +48,29 @@ class Tree extends PositionComponent
     priority = baseOfTrunkY.toInt();
   }
 
-  void chop(DamageType incomingDamage) {
+  Future<void> chop(DamageType incomingDamage) async {
     if (incomingDamage != DamageType.chopping) return;
 
     health--;
     debugPrint("Tree health is now: $health");
+
+    SpriteAnimationComponent leaves =
+        SpriteAnimationComponent.fromFrameData(
+            await game.images.load(Assets.elements.vfx.organic.leavesHit),
+            SpriteAnimationData.sequenced(
+              amount: 10,
+              stepTime: 0.1,
+              textureSize: Vector2(64, 32),
+              loop: false,
+            ),
+          )
+          ..removeOnFinish = true
+          ..anchor = Anchor.bottomCenter
+          ..position = position.clone() - Vector2(size.x / 2, -size.y / 2)
+          ..priority = priority + 1;
+
+    if (Random().nextBool()) leaves.flipHorizontally();
+    _visual.add(leaves);
 
     // Damage flash
     _visual.add(
@@ -68,9 +86,9 @@ class Tree extends PositionComponent
     // Sway
     _visual.add(
       SequenceEffect([
-        RotateEffect.by(0.1, EffectController(duration: 0.05)),
-        RotateEffect.by(-0.2, EffectController(duration: 0.1)),
-        RotateEffect.by(0.1, EffectController(duration: 0.05)),
+        ScaleEffect.by(Vector2(0.9, 0.9), EffectController(duration: 0.05)),
+        ScaleEffect.by(Vector2(1.0, 1.1), EffectController(duration: 0.1)),
+        ScaleEffect.to(Vector2(1.0, 1.0), EffectController(duration: 0.05)),
       ]),
     );
 
@@ -87,10 +105,11 @@ class Tree extends PositionComponent
               id: "wood",
               name: "Wood",
               category: ItemCategory.resource,
+              iconPath: Assets.elements.crops.wood,
             );
             game.world.addAll([
               for (int i = 0; i <= 3; i++)
-                DroppedItem(itemData: wood, position: position.clone()),
+                DroppedItem(item: wood, position: position.clone()),
             ]);
             removeFromParent();
           },
@@ -101,7 +120,7 @@ class Tree extends PositionComponent
 
   void _spawnWoodChips() {
     Particle generator = Particle.generate(
-      count: 5,
+      count: Random().nextInt(8),
       lifespan: 0.4,
       generator: (i) {
         final randomVelocity = Vector2(
