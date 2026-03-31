@@ -7,10 +7,11 @@ import 'package:survival_game/components/tree_component.dart';
 import 'package:survival_game/components/tree_effects.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/dropped_item.dart';
-import 'package:survival_game/hitboxes.dart';
+import 'package:survival_game/components/hitboxes.dart';
 import 'package:survival_game/item.dart';
+import 'package:survival_game/obstacles/obstacle.dart';
 
-class Tree extends TreeComponent with TreeEffects {
+class Tree extends TreeComponent with TreeEffects, ObstacleType {
   int health = 5;
 
   Tree({super.position});

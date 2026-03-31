@@ -5,6 +5,7 @@ class Assets {
   static const entities = _Entities();
   static const elements = _Elements();
   static const ui = _Ui();
+  static const tilesets = _Tilesets();
 }
 
 /// A base class that generates standard paths based on a given prefix.
@@ -238,4 +239,10 @@ class _NineSlice {
 class _UiElements {
   const _UiElements();
   final String arrowLeft = "ui/elements/arrow_left.png";
+}
+
+//* Tilesets
+class _Tilesets {
+  const _Tilesets();
+  final String main = "tilesets/spr_tileset_sunnysideworld_16px.png";
 }

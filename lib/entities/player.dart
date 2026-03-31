@@ -7,9 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:survival_game/components/player_component.dart';
 import 'package:survival_game/components/player_effects.dart';
-import 'package:survival_game/hitboxes.dart';
+import 'package:survival_game/components/hitboxes.dart';
 import 'package:survival_game/item.dart';
-import 'package:survival_game/obstacles/tree.dart';
+import 'package:survival_game/obstacles/obstacle.dart';
 
 class Player extends PlayerComponent with PlayerEffects {
   static const List<LogicalKeyboardKey> _hotbarKeys = [
@@ -242,16 +242,47 @@ class Player extends PlayerComponent with PlayerEffects {
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
 
-    if (other is Tree) {
+    if (other is ObstacleType) {
       // Get the current absolute screen boundaries
       final playerBox = children
           .whereType<RectangleHitbox>()
           .first
           .toAbsoluteRect();
-      final treeBox = other.children
-          .whereType<RectangleHitbox>()
-          .first
-          .toAbsoluteRect();
+      Rect? obstacleBox;
+      double maxPenetrationArea = 0;
+
+      for (var hitbox in other.children.whereType<RectangleHitbox>()) {
+        final rect = hitbox.toAbsoluteRect();
+
+        if (playerBox.overlaps(rect)) {
+          final intersect = playerBox.intersect(rect);
+          final penetrationArea = intersect.width * intersect.height;
+
+          if (penetrationArea > maxPenetrationArea) {
+            maxPenetrationArea = penetrationArea;
+            obstacleBox = rect;
+          }
+        }
+      }
+
+      if (obstacleBox == null) return;
+
+      final intersect = playerBox.intersect(obstacleBox);
+      if (intersect.width > 0.1 && intersect.height > 0.1) {
+        if (intersect.width < intersect.height) {
+          if (playerBox.center.dx < obstacleBox.center.dx) {
+            position.x -= intersect.width;
+          } else {
+            position.x += intersect.width;
+          }
+        } else {
+          if (playerBox.center.dy < obstacleBox.center.dy) {
+            position.y -= intersect.height;
+          } else {
+            position.y += intersect.height;
+          }
+        }
+      }
 
       // Calculate exactly how far the player moved this specific frame
       final deltaX = position.x - _lastPosition.x;
@@ -262,11 +293,11 @@ class Player extends PlayerComponent with PlayerEffects {
 
       // Check which axes were completely completely clear a fraction of a second ago
       bool wasClearX =
-          lastPlayerBox.right <= treeBox.left ||
-          lastPlayerBox.left >= treeBox.right;
+          lastPlayerBox.right <= obstacleBox.left ||
+          lastPlayerBox.left >= obstacleBox.right;
       bool wasClearY =
-          lastPlayerBox.bottom <= treeBox.top ||
-          lastPlayerBox.top >= treeBox.bottom;
+          lastPlayerBox.bottom <= obstacleBox.top ||
+          lastPlayerBox.top >= obstacleBox.bottom;
 
       // The Sliding Logic: Only revert the axis that caused the crash
       if (wasClearX && !wasClearY) {
@@ -280,11 +311,11 @@ class Player extends PlayerComponent with PlayerEffects {
       } else {
         // Absolute Fallback: (Triggered only if the player somehow spawns inside the tree)
         final penX =
-            (playerBox.width / 2 + treeBox.width / 2) -
-            (playerBox.center.dx - treeBox.center.dx).abs();
+            (playerBox.width / 2 + obstacleBox.width / 2) -
+            (playerBox.center.dx - obstacleBox.center.dx).abs();
         final penY =
-            (playerBox.height / 2 + treeBox.height / 2) -
-            (playerBox.center.dy - treeBox.center.dy).abs();
+            (playerBox.height / 2 + obstacleBox.height / 2) -
+            (playerBox.center.dy - obstacleBox.center.dy).abs();
         if (penX < penY) {
           position.x = _lastPosition.x;
         } else {

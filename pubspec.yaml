@@ -1,12 +1,13 @@
 name: survival_game
 description: "A simple survival game built with Flame."
 publish_to: "none"
-version: 0.1.1+1
+version: 0.1.2+1
 
 environment:
     sdk: ^3.11.3
 
 dependencies:
+    fast_noise: ^2.0.0
     flame: ^1.36.0
     flutter:
         sdk: flutter

@@ -4,7 +4,7 @@ import 'package:flame/sprite.dart';
 import 'package:flutter/material.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
-import 'package:survival_game/hitboxes.dart';
+import 'package:survival_game/components/hitboxes.dart';
 import 'package:survival_game/inventory.dart';
 
 enum PlayerState {
@@ -30,7 +30,7 @@ enum PlayerState {
   watering,
 }
 
-Set loopingStates = {
+const Set loopingStates = {
   PlayerState.idle,
   PlayerState.running,
   PlayerState.walking,
@@ -125,7 +125,7 @@ class PlayerComponent extends PositionComponent
       RectangleHitbox(
         size: Vector2(8, 8),
         position: Vector2(size.x / 2 - 4, size.y / 2),
-      ),
+      )..debugMode = true,
     );
 
     weaponHitbox = WeaponHitbox()
