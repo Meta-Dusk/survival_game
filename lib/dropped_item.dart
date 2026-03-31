@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
 import 'package:survival_game/item.dart';
-import 'package:survival_game/player.dart';
+import 'package:survival_game/entities/player.dart';
 
 class DroppedItem extends SpriteComponent
     with CollisionCallbacks, HasGameReference<SurvivalGame> {

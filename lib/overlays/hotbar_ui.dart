@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:survival_game/item.dart';
-import 'package:survival_game/player.dart';
+import 'package:survival_game/entities/player.dart';
 
 class HotbarUi extends StatelessWidget {
   final Player player;
@@ -30,7 +30,7 @@ class HotbarUi extends StatelessWidget {
       builder: (context, activeIndex, child) {
         return Row(
           mainAxisSize: MainAxisSize.min,
-          children: List.generate(player.hotbarSize, (index) {
+          children: List.generate(player.inventory.capacity, (index) {
             final item = player.inventory.slots[index];
             final isActive = index == activeIndex;
 

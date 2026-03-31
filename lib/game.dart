@@ -1,7 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
-import 'package:survival_game/player.dart';
-import 'package:survival_game/tree.dart';
+import 'package:survival_game/entities/player.dart';
+import 'package:survival_game/obstacles/tree.dart';
 
 class SurvivalGame extends FlameGame
     with HasKeyboardHandlerComponents, HasCollisionDetection {

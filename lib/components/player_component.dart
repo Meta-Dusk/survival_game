@@ -64,7 +64,6 @@ class PlayerComponent extends PositionComponent
 
   PlayerState current = PlayerState.idle;
   final Inventory inventory = Inventory();
-  final int hotbarSize = 5;
 
   Future<SpriteAnimation> _createAnimation(
     String path, {
@@ -77,12 +76,12 @@ class PlayerComponent extends PositionComponent
     return spriteSheet.createAnimation(
       row: 0,
       stepTime: 0.1,
-      to: amount ?? getFrames(path),
+      to: amount ?? _getFrames(path),
       loop: loop,
     );
   }
 
-  int getFrames(String path) {
+  int _getFrames(String path) {
     final split = path.split("_");
     final suffix = split.last.split(".");
     final strip = suffix.first.split("strip");

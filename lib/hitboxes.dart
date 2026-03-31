@@ -1,6 +1,6 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:survival_game/tree.dart';
+import 'package:survival_game/obstacles/tree.dart';
 
 enum DamageType {
   unarmed,

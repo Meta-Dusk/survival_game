@@ -180,6 +180,7 @@ class _Other {
       "spritesheets/elements/other/spr_deco_windmillshadow_strip9.png";
 }
 
+// * VFX
 class _ChimneySmoke {
   const _ChimneySmoke();
 

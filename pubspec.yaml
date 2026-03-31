@@ -1,7 +1,7 @@
 name: survival_game
 description: "A simple survival game built with Flame."
 publish_to: "none"
-version: 0.1.0+1
+version: 0.1.1+1
 
 environment:
     sdk: ^3.11.3

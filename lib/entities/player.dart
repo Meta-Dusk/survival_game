@@ -1,19 +1,17 @@
-import 'dart:math';
-
 import 'package:flame/camera.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
-import 'package:flame/particles.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:survival_game/components/player_component.dart';
+import 'package:survival_game/components/player_effects.dart';
 import 'package:survival_game/hitboxes.dart';
 import 'package:survival_game/item.dart';
-import 'package:survival_game/tree.dart';
+import 'package:survival_game/obstacles/tree.dart';
 
-class Player extends PlayerComponent {
+class Player extends PlayerComponent with PlayerEffects {
   static const List<LogicalKeyboardKey> _hotbarKeys = [
     LogicalKeyboardKey.digit1,
     LogicalKeyboardKey.digit2,
@@ -38,7 +36,6 @@ class Player extends PlayerComponent {
   Vector2 _lastPosition = Vector2.zero();
   Vector2 _rollDirection = Vector2.zero();
   final double rollSpeedMultiplier = 2.0;
-  int _lastAnimationFrame = -1;
 
   @override
   Future<void> onLoad() async {
@@ -81,7 +78,7 @@ class Player extends PlayerComponent {
     _isActionKeyPressed = keysPressed.contains(LogicalKeyboardKey.keyF);
     if (!_isActionKeyPressed) _canAct = true;
 
-    for (int i = 0; i < hotbarSize && i < _hotbarKeys.length; i++) {
+    for (int i = 0; i < inventory.capacity && i < _hotbarKeys.length; i++) {
       if (keysPressed.contains(_hotbarKeys[i])) {
         inventory.setSlot(i);
         weaponHitbox.resetSwing();
@@ -241,39 +238,6 @@ class Player extends PlayerComponent {
     animationParticles();
   }
 
-  void animationParticles() {
-    SpriteAnimationTicker? currentTicker;
-    if (layers.isNotEmpty) {
-      currentTicker = layers.first.animationTickers?[current];
-    }
-    if (currentTicker == null) return;
-
-    int currentFrame = currentTicker.currentIndex;
-    if (currentFrame == _lastAnimationFrame) return;
-
-    if (current == PlayerState.running) {
-      final Set<int> stepFrames = {0, 2, 4, 6};
-      if (stepFrames.contains(currentFrame)) {
-        // Loud footstep SFX here
-        _spawnDust();
-      }
-    } else if (current == PlayerState.jumping) {
-      final Set<int> stepFrames = {2, 8};
-      if (stepFrames.contains(currentFrame)) {
-        // Jump SFX here
-        _spawnDust(count: 5);
-      }
-    } else if (current == PlayerState.rolling) {
-      final Set<int> stepFrames = {2, 5};
-      if (stepFrames.contains(currentFrame)) {
-        // Rolling SFX here
-        _spawnDust(count: 10, range: 6.0);
-      }
-    }
-
-    _lastAnimationFrame = currentFrame;
-  }
-
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
@@ -328,47 +292,6 @@ class Player extends PlayerComponent {
         }
       }
     }
-  }
-
-  void _spawnDust({int count = 3, double range = 3.0}) {
-    Particle generator = Particle.generate(
-      count: count,
-      lifespan: 0.3,
-      generator: (i) {
-        // Slight random spread, floating slightly upwards
-        final randomVelocity = Vector2(
-          (Random().nextDouble() - 0.5) * 50,
-          -Random().nextDouble() * 30,
-        );
-
-        return AcceleratedParticle(
-          position: Vector2(Random().nextDoubleBetween(-range, range), 0),
-          speed: randomVelocity,
-          child: ComputedParticle(
-            renderer: (canvas, particle) {
-              final paint = Paint()
-                // Start at 50% opacity and fade to 0
-                ..color = Colors.white.withValues(
-                  alpha: (1.0 - particle.progress) * 0.5,
-                );
-              canvas.drawRect(
-                Rect.fromCenter(center: Offset.zero, width: 2, height: 2),
-                paint,
-              );
-            },
-          ),
-        );
-      },
-    );
-
-    game.world.add(
-      ParticleSystemComponent(
-        position: position.clone() + Vector2(0, size.y / 4 - 8),
-        particle: generator,
-        anchor: Anchor.bottomCenter,
-        priority: priority + 1,
-      ),
-    );
   }
 
   void _setDamageImmune(bool immune) {
