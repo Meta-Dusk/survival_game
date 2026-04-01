@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
@@ -68,10 +67,7 @@ class TerrainTile extends PositionComponent with ObstacleType {
       canvas,
       size: size,
       position: visualOffset ?? Vector2.zero(),
-      // bleed: 1,
-      overridePaint: Paint()
-        ..isAntiAlias = false
-        ..filterQuality = FilterQuality.none,
+      overridePaint: Paint()..isAntiAlias = false,
     );
     // canvas.drawRect(
     //   size.toRect(),

@@ -125,7 +125,7 @@ class PlayerComponent extends PositionComponent
       RectangleHitbox(
         size: Vector2(8, 8),
         position: Vector2(size.x / 2 - 4, size.y / 2),
-      )..debugMode = true,
+      ),
     );
 
     weaponHitbox = WeaponHitbox()
