@@ -11,8 +11,6 @@ import 'package:survival_game/terrain/chunk.dart';
 import 'package:survival_game/terrain/terrain_tile.dart';
 
 class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
-  WorldGenerator() : super(priority: -9999);
-
   final int chunkSize = 16;
   final double tileSize = 16.0;
   final Map<String, Chunk> _activeChunks = {};
@@ -34,7 +32,6 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
   }
 
   double getElevation(int worldX, int worldY) {
-    // fast_noise has a single2D function to check exact coordinates!
     return fn.PerlinNoise().singlePerlin2(
       worldSeed,
       worldX.toDouble() * 0.05,
@@ -61,95 +58,113 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
     return validMasks.contains(mask);
   }
 
+  /// Returns a list of hitboxes for cliff plateaus (the outlines).
   List<RectangleHitbox>? _getHitboxesForMask(int mask) {
-    double t = 6.0; // Wall thickness
-    const double stepHeight = 4.0;
+    const double step = 4.0;
 
     switch (mask) {
+      // EDGES
       case 14: // Top Edge (Wall is at the Top)
-        return [RectangleHitbox(position: Vector2(0, 0), size: Vector2(16, t))];
-      case 11: // Bottom Edge (Wall is at the Bottom)
         return [
-          RectangleHitbox(position: Vector2(0, 16 - t), size: Vector2(16, t)),
+          RectangleHitbox(position: Vector2.zero(), size: Vector2(16, step)),
         ];
+      case 11: // Bottom Edge (Wall is at the Bottom)
+        return [];
       case 7: // Left Edge (Wall is on the Left)
-        return [RectangleHitbox(position: Vector2(0, 0), size: Vector2(t, 16))];
+        return [
+          RectangleHitbox(position: Vector2.zero(), size: Vector2(step, 16)),
+        ];
       case 13: // Right Edge (Wall is on the Right)
         return [
-          RectangleHitbox(position: Vector2(16 - t, 0), size: Vector2(t, 16)),
-        ];
-      case 9:
-        // Bottom-Right Corner (Solid part is Top-Left)
-        // Steps get narrower as they go down
-        return [
-          RectangleHitbox(position: Vector2(8, 0), size: Vector2(t, 8)),
           RectangleHitbox(
-            position: Vector2(0, 8),
-            size: Vector2(10, stepHeight),
-          ),
-          RectangleHitbox(
-            position: Vector2(0, 12),
-            size: Vector2(5, stepHeight),
+            position: Vector2(16 - step, 0),
+            size: Vector2(step, 16),
           ),
         ];
-      case 3:
-        // Bottom-Left Corner (Solid part is Top-Right)
-        // Steps get narrower and shift to the right as they go down
+
+      // OUTER CORNERS
+      case 9: // Bottom-Right Corner (Solid is Top-Left)
         return [
-          RectangleHitbox(position: Vector2(8, 0), size: Vector2(t, 8)),
-          RectangleHitbox(
-            position: Vector2(6, 8),
-            size: Vector2(10, stepHeight),
-          ),
-          RectangleHitbox(
-            position: Vector2(11, 12),
-            size: Vector2(5, stepHeight),
-          ),
+          RectangleHitbox(position: Vector2(12, 0), size: Vector2(step, 16)),
+          RectangleHitbox(position: Vector2(8, 8), size: Vector2(4, step)),
+          RectangleHitbox(position: Vector2(4, 12), size: Vector2(8, step)),
         ];
-      case 12:
-        // Top-Right Corner (Solid part is Bottom-Left)
-        // Steps get wider as they go down
+      case 3: // Bottom-Left Corner (Solid is Top-Right)
         return [
-          RectangleHitbox(
-            position: Vector2(0, 0),
-            size: Vector2(4, stepHeight),
-          ),
-          RectangleHitbox(
-            position: Vector2(0, 4),
-            size: Vector2(8, stepHeight),
-          ),
-          RectangleHitbox(
-            position: Vector2(0, 8),
-            size: Vector2(12, stepHeight),
-          ),
-          RectangleHitbox(
-            position: Vector2(0, 12),
-            size: Vector2(16, stepHeight),
-          ),
+          RectangleHitbox(position: Vector2(0, 0), size: Vector2(step, 16)),
+          RectangleHitbox(position: Vector2(step, 8), size: Vector2(4, step)),
+          RectangleHitbox(position: Vector2(step, 12), size: Vector2(8, step)),
         ];
-      case 6:
-        // Top-Left Corner (Solid part is Bottom-Right)
-        // Steps get wider and start further left as they go down
+      case 12: // Top-Right Corner (Solid is Bottom-Left)
         return [
-          RectangleHitbox(
-            position: Vector2(12, 0),
-            size: Vector2(4, stepHeight),
-          ),
-          RectangleHitbox(
-            position: Vector2(8, 4),
-            size: Vector2(8, stepHeight),
-          ),
-          RectangleHitbox(
-            position: Vector2(4, 8),
-            size: Vector2(12, stepHeight),
-          ),
-          RectangleHitbox(
-            position: Vector2(0, 12),
-            size: Vector2(16, stepHeight),
-          ),
+          RectangleHitbox(position: Vector2(0, 0), size: Vector2(step, 8)),
+          RectangleHitbox(position: Vector2(4, 4), size: Vector2(step, 8)),
+          RectangleHitbox(position: Vector2(8, 8), size: Vector2(step, 8)),
+          RectangleHitbox(position: Vector2(12, 12), size: Vector2(step, 8)),
+        ];
+      case 6: // Top-Left Corner (Solid is Bottom-Right)
+        return [
+          RectangleHitbox(position: Vector2(12, 0), size: Vector2(step, 8)),
+          RectangleHitbox(position: Vector2(8, 4), size: Vector2(step, 8)),
+          RectangleHitbox(position: Vector2(4, 8), size: Vector2(step, 8)),
+          RectangleHitbox(position: Vector2(0, 12), size: Vector2(step, 8)),
         ];
       default:
         return null;
+    }
+  }
+
+  /// Returns a list of hitboxes for the cliff wall bases.
+  List<RectangleHitbox>? _getBaseHitboxesForMask(
+    int northMask,
+    int worldX,
+    int worldY,
+  ) {
+    const double step = 4.0;
+
+    switch (northMask) {
+      // FLAT WALL BASES
+      case 11 || 15:
+        // Flat wall base (Center Bottom)
+        // Connects to the top tile's hitbox and goes down to the floor.
+        return [
+          RectangleHitbox(position: Vector2(0, 0), size: Vector2(16, 12)),
+        ];
+
+      // DIAGONAL WALL BASES
+      case 9: // Bottom-Right Wall Base
+        final bool leftIsWallBase = _isValidCliffFormation(
+          worldX - 1,
+          worldY - 1,
+        );
+        return [
+          RectangleHitbox(position: Vector2(0, 0), size: Vector2(16, step)),
+          RectangleHitbox(position: Vector2(0, 4), size: Vector2(12, step)),
+          RectangleHitbox(position: Vector2(0, 8), size: Vector2(8, step)),
+          if (!leftIsWallBase)
+            RectangleHitbox(position: Vector2(0, 16), size: Vector2(4, step)),
+        ];
+
+      case 3: // Bottom-Left Wall Base
+        final bool rightIsWallBase = _isValidCliffFormation(
+          worldX + 1,
+          worldY - 1,
+        );
+        return [
+          RectangleHitbox(position: Vector2(0, 0), size: Vector2(16, step)),
+          RectangleHitbox(position: Vector2(4, 4), size: Vector2(12, step)),
+          RectangleHitbox(position: Vector2(8, 8), size: Vector2(8, step)),
+          if (!rightIsWallBase)
+            RectangleHitbox(position: Vector2(16, 16), size: Vector2(4, step)),
+        ];
+
+      default:
+        return [
+          RectangleHitbox(
+            position: Vector2(0, 0),
+            size: Vector2(16, 16 - step),
+          ),
+        ];
     }
   }
 
@@ -209,35 +224,40 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
   // --- THE CHUNK BUILDER ---
   void _generateChunk(int chunkX, int chunkY) {
     final chunkKey = '$chunkX,$chunkY';
-    if (_activeChunks.containsKey(chunkKey)) return; // Already loaded!
+    if (_activeChunks.containsKey(chunkKey)) return;
 
-    // Calculate the absolute world coordinates for this chunk's top-left corner
+    // Chunk's top-left corner absolute world coordinates
     final startWorldX = chunkX * chunkSize;
     final startWorldY = chunkY * chunkSize;
 
-    final chunk = Chunk(chunkX, chunkY)
-      ..position = Vector2(startWorldX * tileSize, startWorldY * tileSize)
-      ..size = Vector2(chunkSize * tileSize, chunkSize * tileSize);
+    final chunk = Chunk(chunkX, chunkY);
 
     for (int x = 0; x < chunkSize; x++) {
       for (int y = 0; y < chunkSize; y++) {
         final worldX = startWorldX + x;
         final worldY = startWorldY + y;
-        final localPos = Vector2(x * tileSize, y * tileSize);
+        final absolutePos = Vector2(worldX * tileSize, worldY * tileSize);
         double height = getElevation(worldX, worldY);
         Sprite baseSprite = (height < -0.2) ? waterSprite : grassSprite;
         TileType baseType = (height < -0.2) ? TileType.water : TileType.grass;
         Vector2 terrainSize = Vector2.all(tileSize);
 
-        chunk.add(
+        void spawnTile(TerrainTile tile) {
+          chunk.tiles.add(tile);
+          game.world.add(tile);
+        }
+
+        spawnTile(
           TerrainTile(
             sprite: baseSprite..rasterize(),
             type: baseType,
-            position: localPos,
+            customHitboxes: baseType == TileType.water ? null : const [],
+            position: absolutePos,
             size: terrainSize,
           ),
         );
 
+        // Cliff Outline
         if (_isValidCliffFormation(worldX, worldY)) {
           int mask = 0;
           if (_isValidCliffFormation(worldX, worldY - 1)) mask += 1;
@@ -246,28 +266,33 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
           if (_isValidCliffFormation(worldX - 1, worldY)) mask += 8;
 
           if (mask != 15) {
-            chunk.add(
+            spawnTile(
               TerrainTile(
                 sprite: _getCliffSpriteForMask(spriteSheet, mask)..rasterize(),
                 type: TileType.cliff,
                 customHitboxes: _getHitboxesForMask(mask),
-                position: localPos,
+                position: absolutePos,
                 size: terrainSize,
-              )..debugMode = true,
+              ),
             );
           }
+          // Cliff Walls
         } else if (_isValidCliffFormation(worldX, worldY - 1)) {
           int northMask = 0;
           if (_isValidCliffFormation(worldX, worldY - 2)) northMask += 1;
           if (_isValidCliffFormation(worldX + 1, worldY - 1)) northMask += 2;
           if (_isValidCliffFormation(worldX - 1, worldY - 1)) northMask += 8;
 
-          chunk.add(
+          spawnTile(
             TerrainTile(
               sprite: _getCliffBaseSprite(spriteSheet, northMask)..rasterize(),
               type: TileType.cliff,
-              customHitboxes: _getHitboxesForMask(northMask),
-              position: localPos,
+              customHitboxes: _getBaseHitboxesForMask(
+                northMask,
+                worldX,
+                worldY,
+              ),
+              position: absolutePos,
               size: terrainSize,
             ),
           );
@@ -276,7 +301,6 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
     }
 
     _activeChunks[chunkKey] = chunk;
-    add(chunk);
   }
 
   // --- THE MANAGER LOOP ---
@@ -312,7 +336,7 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
       // Unload chunks that are too far away
       _activeChunks.removeWhere((key, chunk) {
         if (!chunksToKeep.contains(key)) {
-          chunk.removeFromParent(); // Deletes the chunk and all its tiles!
+          chunk.unload();
           return true;
         }
         return false;

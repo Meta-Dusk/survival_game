@@ -15,7 +15,6 @@ class TreeComponent extends PositionComponent
   Future<void> onLoad() async {
     size = Vector2(32, 34);
     anchor = Anchor.center;
-    // debugMode = true;
 
     visual =
         SpriteAnimationComponent.fromFrameData(

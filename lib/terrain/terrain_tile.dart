@@ -15,37 +15,51 @@ class TerrainTile extends PositionComponent with ObstacleType {
   final TileType type;
   final List<RectangleHitbox>? customHitboxes;
   final Vector2? visualOffset;
+  final int? customPriority;
 
   TerrainTile({
     required this.sprite,
     required this.type,
     this.customHitboxes,
     this.visualOffset,
+    this.customPriority,
     required super.position,
     required super.size,
   });
 
   @override
   Future<void> onLoad() async {
-    if (obstacleTiles.contains(type)) {
-      if (customHitboxes != null) {
-        for (var hitbox in customHitboxes!) {
-          hitbox.position += Vector2.all(0.05);
-          hitbox.size -= Vector2.all(0.1);
-          hitbox.collisionType = CollisionType.passive;
-          add(hitbox);
-        }
-      } else {
-        add(
-          RectangleHitbox(
-            position: Vector2.all(0.05),
-            size: size - Vector2.all(0.1),
-            collisionType: CollisionType.passive,
-          ),
-        );
-      }
+    if (customPriority != null) {
+      priority = customPriority!;
+    } else if (type != TileType.cliff) {
+      priority = -999999;
+    } else {
+      priority = (position.y + size.y).toInt();
     }
-    priority = 0;
+
+    if (customHitboxes == null) {
+      add(
+        RectangleHitbox(
+            position: Vector2.zero(),
+            size: size,
+            collisionType: CollisionType.passive,
+          )
+          ..debugMode = true
+          ..debugCoordinatesPrecision = null,
+      );
+      return;
+    }
+
+    if (customHitboxes!.isEmpty) return;
+
+    for (var hitbox in customHitboxes!) {
+      add(
+        hitbox
+          ..collisionType = CollisionType.passive
+          ..debugMode = true
+          ..debugCoordinatesPrecision = null,
+      );
+    }
   }
 
   @override
