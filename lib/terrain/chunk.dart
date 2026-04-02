@@ -10,7 +10,10 @@ class Chunk extends PositionComponent {
 
   void unload() {
     for (var tile in tiles) {
+      if (!tile.isMounted) continue;
       tile.removeFromParent();
     }
+    tiles.clear();
+    removeFromParent();
   }
 }

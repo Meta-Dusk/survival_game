@@ -1,10 +1,9 @@
-import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
+import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
-import 'package:survival_game/components/hitboxes.dart';
 import 'package:survival_game/inventory.dart';
 
 enum PlayerState {
@@ -39,31 +38,27 @@ const Set loopingStates = {
 class PlayerSpriteLayer extends SpriteAnimationGroupComponent<PlayerState> {
   PlayerSpriteLayer({super.size, super.current, super.animations})
     : super(paint: Paint()..isAntiAlias = false);
-
-  // @override
-  // void render(Canvas canvas) {
-  //   animationTickers?[current]?.getSprite().render(
-  //     canvas,
-  //     size: size,
-  //     overridePaint: paint,
-  //   );
-  //   super.render(canvas);
-  // }
 }
 
-class PlayerComponent extends PositionComponent
-    with KeyboardHandler, HasGameReference<SurvivalGame>, CollisionCallbacks {
-  Vector2 velocity = Vector2.zero();
-  final double moveSpeed = 75.0;
+class PlayerComponent extends BodyComponent<SurvivalGame> with KeyboardHandler {
+  final Vector2 initialPosition;
+  final spriteSize = Vector2(96, 64);
+  bool isFlippedHorizontally = false;
 
   @protected
   final List<PlayerSpriteLayer> layers = [];
 
-  @protected
-  late WeaponHitbox weaponHitbox;
-
   PlayerState current = PlayerState.idle;
   final Inventory inventory = Inventory();
+
+  PlayerComponent({required this.initialPosition});
+
+  void flipHorizontally() {
+    isFlippedHorizontally = !isFlippedHorizontally;
+    for (var layer in layers) {
+      layer.flipHorizontally();
+    }
+  }
 
   Future<SpriteAnimation> _createAnimation(
     String path, {
@@ -71,7 +66,7 @@ class PlayerComponent extends PositionComponent
     bool loop = true,
   }) async {
     final image = await game.images.load(path);
-    final spriteSheet = SpriteSheet(image: image, srcSize: size);
+    final spriteSheet = SpriteSheet(image: image, srcSize: spriteSize);
 
     return spriteSheet.createAnimation(
       row: 0,
@@ -102,10 +97,10 @@ class PlayerComponent extends PositionComponent
     }
 
     final layer = PlayerSpriteLayer(
-      size: size,
+      size: spriteSize,
       current: PlayerState.idle,
       animations: loadedAnimations,
-    );
+    )..anchor = Anchor.center;
 
     layers.add(layer);
     add(layer);
@@ -114,24 +109,12 @@ class PlayerComponent extends PositionComponent
   @mustCallSuper
   @override
   Future<void> onLoad() async {
-    size = Vector2(96, 64);
-    anchor = Anchor.center;
+    await super.onLoad();
+    renderBody = false;
 
     await _addLayer(Assets.entities.player.base);
     await _addLayer(Assets.entities.player.hair.bowlHair);
     await _addLayer(Assets.entities.player.tools);
-
-    add(
-      RectangleHitbox(
-        size: Vector2(8, 8),
-        position: Vector2(size.x / 2 - 4, size.y / 2),
-      ),
-    );
-
-    weaponHitbox = WeaponHitbox()
-      ..size = Vector2(27, 25)
-      ..position = Vector2(size.x / 2 - 2, 15);
-    add(weaponHitbox);
   }
 
   void setTint(Color color) {
@@ -144,5 +127,20 @@ class PlayerComponent extends PositionComponent
     for (var layer in layers) {
       layer.paint.colorFilter = null;
     }
+  }
+
+  @override
+  Body createBody() {
+    final bodyDef = BodyDef(
+      position: initialPosition,
+      type: BodyType.dynamic,
+      fixedRotation: true,
+    );
+    final body = world.createBody(bodyDef);
+    body.userData = this;
+    final shape = CircleShape()..radius = 6.0;
+    final fixtureDef = FixtureDef(shape, friction: 0.0, density: 1.0);
+    body.createFixture(fixtureDef);
+    return body;
   }
 }

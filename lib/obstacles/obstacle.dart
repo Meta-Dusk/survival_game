@@ -1,3 +1,4 @@
-import 'package:flame/components.dart';
+import 'package:flame_forge2d/flame_forge2d.dart';
+import 'package:survival_game/game.dart';
 
-mixin ObstacleType on PositionComponent {}
+mixin ObstacleType on BodyComponent<SurvivalGame> {}

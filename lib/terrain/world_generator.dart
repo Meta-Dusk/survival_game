@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:fast_noise/fast_noise.dart' as fn;
-import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame/image_composition.dart';
 import 'package:flame/sprite.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
@@ -58,113 +58,81 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
     return validMasks.contains(mask);
   }
 
-  /// Returns a list of hitboxes for cliff plateaus (the outlines).
-  List<RectangleHitbox>? _getHitboxesForMask(int mask) {
+  /// Returns a list of Rects for cliff plateaus (the outlines).
+  List<Rect>? _getHitboxesForMask(int mask) {
     const double step = 4.0;
 
     switch (mask) {
       // EDGES
       case 14: // Top Edge (Wall is at the Top)
-        return [
-          RectangleHitbox(position: Vector2.zero(), size: Vector2(16, step)),
-        ];
+        return [Rect.fromLTWH(0, 0, 16, step)];
       case 11: // Bottom Edge (Wall is at the Bottom)
         return [];
       case 7: // Left Edge (Wall is on the Left)
-        return [
-          RectangleHitbox(position: Vector2.zero(), size: Vector2(step, 16)),
-        ];
+        return [Rect.fromLTWH(0, 0, step, 16)];
       case 13: // Right Edge (Wall is on the Right)
-        return [
-          RectangleHitbox(
-            position: Vector2(16 - step, 0),
-            size: Vector2(step, 16),
-          ),
-        ];
+        return [Rect.fromLTWH(16 - step, 0, step, 16)];
 
-      // OUTER CORNERS
+      // OUTER CORNERS (Box2D staircases)
       case 9: // Bottom-Right Corner (Solid is Top-Left)
         return [
-          RectangleHitbox(position: Vector2(12, 0), size: Vector2(step, 16)),
-          RectangleHitbox(position: Vector2(8, 8), size: Vector2(4, step)),
-          RectangleHitbox(position: Vector2(4, 12), size: Vector2(8, step)),
+          Rect.fromLTWH(12, 0, step, 16),
+          Rect.fromLTWH(8, 4, step, step),
+          Rect.fromLTWH(4, 8, 8, step),
+          Rect.fromLTWH(0, 12, 12, step),
         ];
       case 3: // Bottom-Left Corner (Solid is Top-Right)
         return [
-          RectangleHitbox(position: Vector2(0, 0), size: Vector2(step, 16)),
-          RectangleHitbox(position: Vector2(step, 8), size: Vector2(4, step)),
-          RectangleHitbox(position: Vector2(step, 12), size: Vector2(8, step)),
+          Rect.fromLTWH(0, 0, step, 16),
+          Rect.fromLTWH(4, 4, 4, step),
+          Rect.fromLTWH(4, 8, 8, step),
+          Rect.fromLTWH(4, 12, 12, step),
         ];
       case 12: // Top-Right Corner (Solid is Bottom-Left)
         return [
-          RectangleHitbox(position: Vector2(0, 0), size: Vector2(step, 8)),
-          RectangleHitbox(position: Vector2(4, 4), size: Vector2(step, 8)),
-          RectangleHitbox(position: Vector2(8, 8), size: Vector2(step, 8)),
-          RectangleHitbox(position: Vector2(12, 12), size: Vector2(step, 8)),
+          Rect.fromLTWH(0, 0, 4, step),
+          Rect.fromLTWH(0, 4, 8, step),
+          Rect.fromLTWH(0, 8, 12, step),
+          Rect.fromLTWH(0, 12, 16, step),
         ];
       case 6: // Top-Left Corner (Solid is Bottom-Right)
         return [
-          RectangleHitbox(position: Vector2(12, 0), size: Vector2(step, 8)),
-          RectangleHitbox(position: Vector2(8, 4), size: Vector2(step, 8)),
-          RectangleHitbox(position: Vector2(4, 8), size: Vector2(step, 8)),
-          RectangleHitbox(position: Vector2(0, 12), size: Vector2(step, 8)),
+          Rect.fromLTWH(12, 0, 4, step),
+          Rect.fromLTWH(8, 4, 8, step),
+          Rect.fromLTWH(4, 8, 12, step),
+          Rect.fromLTWH(0, 12, 16, step),
         ];
       default:
         return null;
     }
   }
 
-  /// Returns a list of hitboxes for the cliff wall bases.
-  List<RectangleHitbox>? _getBaseHitboxesForMask(
-    int northMask,
-    int worldX,
-    int worldY,
-  ) {
+  /// Returns a list of Rects for the cliff wall bases.
+  List<Rect>? _getBaseHitboxesForMask(int northMask) {
     const double step = 4.0;
 
     switch (northMask) {
-      // FLAT WALL BASES
-      case 11 || 15:
-        // Flat wall base (Center Bottom)
-        // Connects to the top tile's hitbox and goes down to the floor.
-        return [
-          RectangleHitbox(position: Vector2(0, 0), size: Vector2(16, 12)),
-        ];
+      case 11 || 15: // Flat wall base (Center Bottom)
+        return [Rect.fromLTWH(0, 0, 16, 16)];
 
-      // DIAGONAL WALL BASES
       case 9: // Bottom-Right Wall Base
-        final bool leftIsWallBase = _isValidCliffFormation(
-          worldX - 1,
-          worldY - 1,
-        );
         return [
-          RectangleHitbox(position: Vector2(0, 0), size: Vector2(16, step)),
-          RectangleHitbox(position: Vector2(0, 4), size: Vector2(12, step)),
-          RectangleHitbox(position: Vector2(0, 8), size: Vector2(8, step)),
-          if (!leftIsWallBase)
-            RectangleHitbox(position: Vector2(0, 16), size: Vector2(4, step)),
+          Rect.fromLTWH(0, 0, 16, step),
+          Rect.fromLTWH(0, 4, 12, step),
+          Rect.fromLTWH(0, 8, 8, step),
+          Rect.fromLTWH(0, 12, 4, step),
         ];
 
       case 3: // Bottom-Left Wall Base
-        final bool rightIsWallBase = _isValidCliffFormation(
-          worldX + 1,
-          worldY - 1,
-        );
         return [
-          RectangleHitbox(position: Vector2(0, 0), size: Vector2(16, step)),
-          RectangleHitbox(position: Vector2(4, 4), size: Vector2(12, step)),
-          RectangleHitbox(position: Vector2(8, 8), size: Vector2(8, step)),
-          if (!rightIsWallBase)
-            RectangleHitbox(position: Vector2(16, 16), size: Vector2(4, step)),
+          Rect.fromLTWH(0, 0, 16, step),
+          Rect.fromLTWH(4, 4, 12, step),
+          Rect.fromLTWH(8, 8, 8, step),
+          Rect.fromLTWH(12, 12, 4, step),
         ];
 
       default:
-        return [
-          RectangleHitbox(
-            position: Vector2(0, 0),
-            size: Vector2(16, 16 - step),
-          ),
-        ];
+        return [Rect.fromLTWH(0, 0, 16, 16)];
     }
   }
 
@@ -252,8 +220,8 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
             sprite: baseSprite..rasterize(),
             type: baseType,
             customHitboxes: baseType == TileType.water ? null : const [],
-            position: absolutePos,
-            size: terrainSize,
+            initialPosition: absolutePos,
+            tileDimension: terrainSize,
           ),
         );
 
@@ -271,8 +239,9 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
                 sprite: _getCliffSpriteForMask(spriteSheet, mask)..rasterize(),
                 type: TileType.cliff,
                 customHitboxes: _getHitboxesForMask(mask),
-                position: absolutePos,
-                size: terrainSize,
+                customPriority: absolutePos.y.toInt(),
+                initialPosition: absolutePos,
+                tileDimension: terrainSize,
               ),
             );
           }
@@ -287,13 +256,10 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
             TerrainTile(
               sprite: _getCliffBaseSprite(spriteSheet, northMask)..rasterize(),
               type: TileType.cliff,
-              customHitboxes: _getBaseHitboxesForMask(
-                northMask,
-                worldX,
-                worldY,
-              ),
-              position: absolutePos,
-              size: terrainSize,
+              customHitboxes: _getBaseHitboxesForMask(northMask),
+              customPriority: (absolutePos.y + tileSize).toInt(),
+              initialPosition: absolutePos,
+              tileDimension: terrainSize,
             ),
           );
         }

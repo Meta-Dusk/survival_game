@@ -1,80 +1,78 @@
 import 'dart:async';
 
-import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
+import 'package:survival_game/game.dart';
 import 'package:survival_game/obstacles/obstacle.dart';
 
 enum TileType { grass, cliff, water }
 
 const Set obstacleTiles = {TileType.cliff, TileType.water};
 
-class TerrainTile extends PositionComponent with ObstacleType {
+class TerrainTile extends BodyComponent<SurvivalGame> with ObstacleType {
   final Sprite sprite;
   final TileType type;
-  final List<RectangleHitbox>? customHitboxes;
-  final Vector2? visualOffset;
+  final List<Rect>? customHitboxes;
+  final Vector2 initialPosition;
+  final Vector2 tileDimension;
   final int? customPriority;
+  late SpriteComponent visual;
 
   TerrainTile({
     required this.sprite,
     required this.type,
     this.customHitboxes,
-    this.visualOffset,
     this.customPriority,
-    required super.position,
-    required super.size,
+    required this.initialPosition,
+    required this.tileDimension,
   });
 
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
+    renderBody = false;
+
     if (customPriority != null) {
       priority = customPriority!;
     } else if (type != TileType.cliff) {
-      priority = -999999;
+      priority = -99999;
     } else {
-      priority = (position.y + size.y).toInt();
+      priority = (initialPosition.y + tileDimension.y).toInt();
     }
 
-    if (customHitboxes == null) {
-      add(
-        RectangleHitbox(
-            position: Vector2.zero(),
-            size: size,
-            collisionType: CollisionType.passive,
-          )
-          ..debugMode = true
-          ..debugCoordinatesPrecision = null,
-      );
-      return;
-    }
-
-    if (customHitboxes!.isEmpty) return;
-
-    for (var hitbox in customHitboxes!) {
-      add(
-        hitbox
-          ..collisionType = CollisionType.passive
-          ..debugMode = true
-          ..debugCoordinatesPrecision = null,
-      );
-    }
+    visual = SpriteComponent(
+      sprite: sprite,
+      size: tileDimension,
+      paint: Paint()..isAntiAlias = false,
+    );
+    add(visual);
   }
 
   @override
-  void render(Canvas canvas) {
-    sprite.render(
-      canvas,
-      size: size,
-      position: visualOffset ?? Vector2.zero(),
-      overridePaint: Paint()..isAntiAlias = false,
-    );
-    // canvas.drawRect(
-    //   size.toRect(),
-    //   Paint()
-    //     ..color = Colors.red.withValues(alpha: 0.25)
-    //     ..style = PaintingStyle.stroke
-    //     ..strokeWidth = 1.0,
-    // );
+  Body createBody() {
+    final bodyDef = BodyDef(position: initialPosition, type: BodyType.static);
+    final body = world.createBody(bodyDef);
+    body.userData = this;
+
+    final boxesToCreate = <Rect>[];
+    if (customHitboxes == null) {
+      boxesToCreate.add(Rect.fromLTWH(0, 0, tileDimension.x, tileDimension.y));
+    } else {
+      boxesToCreate.addAll(customHitboxes!);
+    }
+
+    for (var rect in boxesToCreate) {
+      final shape = PolygonShape();
+      final hx = rect.width / 2;
+      final hy = rect.height / 2;
+      final center = Vector2(rect.left + hx, rect.top + hy);
+      shape.setAsBox(hx, hy, center, 0);
+
+      final fixtureDef = FixtureDef(shape, friction: 0.0);
+      body.createFixture(fixtureDef);
+    }
+
+    return body;
   }
 }

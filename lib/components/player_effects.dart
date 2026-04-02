@@ -76,7 +76,7 @@ mixin PlayerEffects on PlayerComponent {
 
     game.world.add(
       ParticleSystemComponent(
-        position: position.clone() + Vector2(0, size.y / 4 - 8),
+        position: position.clone() + Vector2(0, spriteSize.y / 4 - 8),
         particle: generator,
         anchor: Anchor.bottomCenter,
         priority: priority + 1,

@@ -1,5 +1,5 @@
 import 'package:survival_game/components/player_component.dart';
-import 'package:survival_game/components/hitboxes.dart';
+import 'package:survival_game/core/damage_types.dart';
 
 Set swingable = {ItemCategory.tool, ItemCategory.weapon};
 
