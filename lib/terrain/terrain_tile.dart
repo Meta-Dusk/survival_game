@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:survival_game/game.dart';
 import 'package:survival_game/obstacles/obstacle.dart';
 
-enum TileType { grass, cliff, water }
+enum TileType { grass, sand, cliff, water }
 
 const Set obstacleTiles = {TileType.cliff, TileType.water};
 

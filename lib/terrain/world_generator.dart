@@ -17,6 +17,7 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
 
   late List<Sprite> grassSprites;
   late Sprite waterSprite;
+  late Sprite sandSprite;
   late SpriteSheet spriteSheet;
 
   final int worldSeed = Random().nextInt(9999);
@@ -47,6 +48,7 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
       spriteSheet.getSprite(4, 2),
     ];
     waterSprite = spriteSheet.getSprite(1, 4);
+    sandSprite = spriteSheet.getSprite(1, 5);
   }
 
   Sprite _getGrassSprite(int worldX, int worldY) {
@@ -235,11 +237,21 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
         final worldY = startWorldY + y;
         final absolutePos = Vector2(worldX * tileSize, worldY * tileSize);
         double height = getElevation(worldX, worldY);
-        Sprite baseSprite = (height < -0.2)
-            ? waterSprite
-            : _getGrassSprite(worldX, worldY);
-        TileType baseType = (height < -0.2) ? TileType.water : TileType.grass;
+
+        final Sprite baseSprite;
+        final TileType baseType;
         Vector2 terrainSize = Vector2.all(tileSize);
+
+        if (height < -0.2) {
+          baseType = TileType.water;
+          baseSprite = waterSprite;
+        } else if (height < 0.0) {
+          baseType = TileType.sand;
+          baseSprite = sandSprite;
+        } else {
+          baseType = TileType.grass;
+          baseSprite = _getGrassSprite(worldX, worldY);
+        }
 
         void spawnTile(TerrainTile tile) {
           chunk.tiles.add(tile);
