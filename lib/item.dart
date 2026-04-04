@@ -40,6 +40,7 @@ class Equipment extends Item {
   int currentDurability;
   final int maxDurability;
   final int defense;
+  final double damage;
 
   Equipment({
     required super.id,
@@ -51,6 +52,7 @@ class Equipment extends Item {
     super.animationState,
     this.maxDurability = 100,
     this.defense = 0,
+    this.damage = 4.0,
   }) : currentDurability = maxDurability;
 
   Equipment.tool({
@@ -63,5 +65,6 @@ class Equipment extends Item {
     super.animationState,
     this.maxDurability = 100,
     this.defense = 0,
+    this.damage = 1.0,
   }) : currentDurability = maxDurability;
 }

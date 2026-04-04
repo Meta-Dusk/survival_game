@@ -9,8 +9,9 @@ import 'package:survival_game/components/player_effects.dart';
 import 'package:survival_game/core/damage_types.dart';
 import 'package:survival_game/damageable.dart';
 import 'package:survival_game/item.dart';
+import 'package:survival_game/terrain/terrain_tile.dart';
 
-class Player extends PlayerComponent with PlayerEffects {
+class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
   static const List<LogicalKeyboardKey> _hotbarKeys = [
     LogicalKeyboardKey.digit1,
     LogicalKeyboardKey.digit2,
@@ -38,6 +39,8 @@ class Player extends PlayerComponent with PlayerEffects {
   final double rollSpeedMultiplier = 2.5;
   final double sprintSpeedMultiplier = 1.5;
   Vector2 velocity = Vector2.zero();
+  int _waterContacts = 0;
+  bool get _isSwimming => _waterContacts > 0;
 
   Player() : super(initialPosition: Vector2.zero());
 
@@ -70,7 +73,7 @@ class Player extends PlayerComponent with PlayerEffects {
 
   void addCameraZoom(double value) {
     Viewfinder viewFinder = game.camera.viewfinder;
-    viewFinder.zoom = (viewFinder.zoom + value).clamp(3.0, 6.0);
+    viewFinder.zoom = (viewFinder.zoom + value).clamp(1.0, 6.0);
     debugPrint("Setting camera viewfinder zoom to: ${viewFinder.zoom}");
   }
 
@@ -79,7 +82,8 @@ class Player extends PlayerComponent with PlayerEffects {
     velocity = Vector2.zero();
     double step = 1.0;
 
-    _isActionKeyPressed = keysPressed.contains(LogicalKeyboardKey.keyF);
+    _isActionKeyPressed =
+        keysPressed.contains(LogicalKeyboardKey.keyF) && !_isSwimming;
     if (!_isActionKeyPressed) _canAct = true;
 
     for (int i = 0; i < inventory.capacity && i < _hotbarKeys.length; i++) {
@@ -97,7 +101,9 @@ class Player extends PlayerComponent with PlayerEffects {
       if (keysPressed.contains(LogicalKeyboardKey.keyA)) velocity.x = -step;
       if (keysPressed.contains(LogicalKeyboardKey.keyD)) velocity.x = step;
 
-      if (keysPressed.contains(LogicalKeyboardKey.keyV) && !_isJumping) {
+      if (keysPressed.contains(LogicalKeyboardKey.keyV) &&
+          !_isJumping &&
+          !_isSwimming) {
         _isRolling = true;
 
         if (velocity.isZero()) {
@@ -111,7 +117,9 @@ class Player extends PlayerComponent with PlayerEffects {
         }
       }
 
-      if (keysPressed.contains(LogicalKeyboardKey.space) && !_isJumping) {
+      if (keysPressed.contains(LogicalKeyboardKey.space) &&
+          !_isJumping &&
+          !_isSwimming) {
         _isJumping = true;
 
         for (var layer in layers) {
@@ -125,8 +133,8 @@ class Player extends PlayerComponent with PlayerEffects {
       }
     }
 
-    if (keysPressed.contains(LogicalKeyboardKey.equal)) addCameraZoom(0.5);
-    if (keysPressed.contains(LogicalKeyboardKey.minus)) addCameraZoom(-0.5);
+    if (keysPressed.contains(LogicalKeyboardKey.equal)) addCameraZoom(1.0);
+    if (keysPressed.contains(LogicalKeyboardKey.minus)) addCameraZoom(-1.0);
 
     return super.onKeyEvent(event, keysPressed);
   }
@@ -253,14 +261,25 @@ class Player extends PlayerComponent with PlayerEffects {
         _setState(PlayerState.idle);
       }
 
-      // Walking or Running
+      // Walking, Running, Swimming
     } else {
-      body.linearVelocity = velocity * moveSpeed;
+      double currentSpeed = moveSpeed;
+      if (_isSwimming) currentSpeed *= 0.5;
+      body.linearVelocity = velocity * currentSpeed;
 
       if (velocity.isZero()) {
-        _setState(PlayerState.idle);
+        if (_isSwimming) {
+          _setState(PlayerState.swimming);
+        } else {
+          _setState(PlayerState.idle);
+        }
       } else {
-        _setState(_isRunning ? PlayerState.running : PlayerState.walking);
+        if (_isSwimming) {
+          _setState(PlayerState.swimming);
+        } else {
+          _setState(_isRunning ? PlayerState.running : PlayerState.walking);
+        }
+
         if ((velocity.x < 0 && !isFlippedHorizontally) ||
             (velocity.x > 0 && isFlippedHorizontally)) {
           flipHorizontally();
@@ -283,6 +302,20 @@ class Player extends PlayerComponent with PlayerEffects {
       removeTint();
     }
   }
+
+  @override
+  void beginContact(Object other, Contact contact) {
+    if (other is TerrainTile && other.type == TileType.water) {
+      _waterContacts++;
+    }
+  }
+
+  @override
+  void endContact(Object other, Contact contact) {
+    if (other is TerrainTile && other.type == TileType.water) {
+      _waterContacts--;
+    }
+  }
 }
 
 class AttackQueryCallback extends QueryCallback {
@@ -300,7 +333,16 @@ class AttackQueryCallback extends QueryCallback {
     if (debugMode) debugPrint("Weapon AABB physically touched: $userData");
 
     if (userData is Damageable) {
-      userData.takeDamage(1.0, weapon?.damageType ?? DamageType.unarmed);
+      double damageAmount = 1.0;
+
+      if (weapon is Equipment) {
+        damageAmount = (weapon as Equipment).damage;
+      }
+
+      userData.takeDamage(
+        damageAmount,
+        weapon?.damageType ?? DamageType.unarmed,
+      );
       return false;
     }
     return true;

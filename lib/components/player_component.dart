@@ -33,6 +33,8 @@ const Set loopingStates = {
   PlayerState.idle,
   PlayerState.running,
   PlayerState.walking,
+  PlayerState.swimming,
+  PlayerState.waiting,
 };
 
 class PlayerSpriteLayer extends SpriteAnimationGroupComponent<PlayerState> {

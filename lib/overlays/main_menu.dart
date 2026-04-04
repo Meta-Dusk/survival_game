@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:survival_game/core/game_assets.dart';
+import 'package:survival_game/core/game_fonts.dart';
 import 'package:survival_game/core/game_overlays.dart';
 import 'package:survival_game/game.dart';
 
@@ -23,30 +25,20 @@ class MainMenu extends StatelessWidget {
         "PLAY",
         style: TextStyle(
           color: Colors.black,
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontSize: 32,
+          fontFamily: FontFamilies.lief,
         ),
       ),
     );
 
-    Widget titleText = const Text(
-      "SURVIVAL GAME",
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 64,
-        fontWeight: FontWeight.bold,
-        shadows: [
-          Shadow(blurRadius: 0, color: Colors.grey, offset: Offset(4, 4)),
-        ],
-      ),
-    );
+    Widget title = Image.asset(Assets.ui.titles.mainMenuTitle.flutterPath);
 
     return Material(
       color: Colors.black87,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [titleText, const SizedBox(height: 80), playButton],
+          children: [title, const SizedBox(height: 80), playButton],
         ),
       ),
     );

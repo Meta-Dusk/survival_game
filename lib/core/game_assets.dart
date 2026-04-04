@@ -8,6 +8,10 @@ class Assets {
   static const tilesets = _Tilesets();
 }
 
+extension FlutterAssetPath on String {
+  String get flutterPath => "assets/images/$this";
+}
+
 /// A base class that generates standard paths based on a given prefix.
 abstract class PlayerAnimationSet {
   /// An example of [path] would be: "spritesheets/entities/human/"
@@ -111,6 +115,7 @@ class _Ui {
   const _Ui();
   final nineSlice = const _NineSlice();
   final elements = const _UiElements();
+  final titles = const _Titles();
 }
 
 // * --- Asset Definitions ---
@@ -239,6 +244,11 @@ class _NineSlice {
 class _UiElements {
   const _UiElements();
   final String arrowLeft = "ui/elements/arrow_left.png";
+}
+
+class _Titles {
+  const _Titles();
+  final String mainMenuTitle = "ui/titles/jasg_title_render2.png";
 }
 
 //* Tilesets

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:survival_game/core/game_fonts.dart';
 import 'package:survival_game/item.dart';
 import 'package:survival_game/entities/player.dart';
 
@@ -16,6 +17,7 @@ class HotbarUi extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.bold,
           decoration: TextDecoration.none,
+          fontFamily: FontFamilies.pixelifySans,
         ),
         textAlign: TextAlign.center,
       );

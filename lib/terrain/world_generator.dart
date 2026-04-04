@@ -15,7 +15,7 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
   final double tileSize = 16.0;
   final Map<String, Chunk> _activeChunks = {};
 
-  late Sprite grassSprite;
+  late List<Sprite> grassSprites;
   late Sprite waterSprite;
   late SpriteSheet spriteSheet;
 
@@ -27,8 +27,37 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
   Future<void> onLoad() async {
     final tilesetImage = await game.images.load(Assets.tilesets.main);
     spriteSheet = SpriteSheet(image: tilesetImage, srcSize: Vector2.all(16));
-    grassSprite = spriteSheet.getSprite(3, 0);
+
+    grassSprites = [
+      spriteSheet.getSprite(1, 1),
+      spriteSheet.getSprite(1, 2),
+      spriteSheet.getSprite(2, 1),
+      spriteSheet.getSprite(2, 2),
+      spriteSheet.getSprite(2, 3),
+      spriteSheet.getSprite(2, 4),
+      spriteSheet.getSprite(2, 5),
+      spriteSheet.getSprite(2, 6),
+      spriteSheet.getSprite(3, 0),
+      spriteSheet.getSprite(3, 1),
+      spriteSheet.getSprite(3, 2),
+      spriteSheet.getSprite(3, 3),
+      spriteSheet.getSprite(3, 5),
+      spriteSheet.getSprite(3, 7),
+      spriteSheet.getSprite(4, 1),
+      spriteSheet.getSprite(4, 2),
+    ];
     waterSprite = spriteSheet.getSprite(1, 4);
+  }
+
+  Sprite _getGrassSprite(int worldX, int worldY) {
+    int tileHash = Object.hash(worldSeed, worldX, worldY);
+    final random = Random(tileHash);
+    if (random.nextDouble() > 0.20) {
+      return grassSprites.first;
+    } else {
+      int variationIndex = 1 + random.nextInt(grassSprites.length - 1);
+      return grassSprites[variationIndex];
+    }
   }
 
   double getElevation(int worldX, int worldY) {
@@ -206,7 +235,9 @@ class WorldGenerator extends Component with HasGameReference<SurvivalGame> {
         final worldY = startWorldY + y;
         final absolutePos = Vector2(worldX * tileSize, worldY * tileSize);
         double height = getElevation(worldX, worldY);
-        Sprite baseSprite = (height < -0.2) ? waterSprite : grassSprite;
+        Sprite baseSprite = (height < -0.2)
+            ? waterSprite
+            : _getGrassSprite(worldX, worldY);
         TileType baseType = (height < -0.2) ? TileType.water : TileType.grass;
         Vector2 terrainSize = Vector2.all(tileSize);
 

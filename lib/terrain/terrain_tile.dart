@@ -70,6 +70,7 @@ class TerrainTile extends BodyComponent<SurvivalGame> with ObstacleType {
       shape.setAsBox(hx, hy, center, 0);
 
       final fixtureDef = FixtureDef(shape, friction: 0.0);
+      if (type == TileType.water) fixtureDef.isSensor = true;
       body.createFixture(fixtureDef);
     }
 

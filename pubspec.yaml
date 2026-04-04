@@ -21,6 +21,7 @@ dev_dependencies:
 flutter:
     uses-material-design: true
     assets:
+        - assets/fonts/
         - assets/images/elements/crops/
         - assets/images/elements/other/
         - assets/images/spritesheets/elements/animals/
@@ -55,3 +56,14 @@ flutter:
         - assets/images/tilesets/
         - assets/images/ui/elements/
         - assets/images/ui/nine_slice/
+        - assets/images/ui/titles/
+    fonts:
+        - family: PixelifySans
+          fonts:
+              - asset: assets/fonts/PixelifySans-VariableFont_wght.ttf
+        - family: Dungeon
+          fonts:
+              - asset: assets/fonts/DungeonFont.ttf
+        - family: Lief
+          fonts:
+              - asset: assets/fonts/Lief.ttf
