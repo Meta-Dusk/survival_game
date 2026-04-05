@@ -5,10 +5,12 @@ import 'package:flame/sprite.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
 
+typedef SpriteArray2D = List<List<Sprite>>;
+
 class WorldComponent extends Component with HasGameReference<SurvivalGame> {
   late List<Sprite> grassSprites;
-  late Sprite waterSprite;
-  late Sprite sandSprite;
+  late SpriteArray2D waterSprites;
+  late List<Sprite> sandSprites;
   late SpriteSheet spriteSheet;
   final int worldSeed = Random().nextInt(9999);
 
@@ -35,14 +37,28 @@ class WorldComponent extends Component with HasGameReference<SurvivalGame> {
       spriteSheet.getSprite(4, 1),
       spriteSheet.getSprite(4, 2),
     ];
-    waterSprite = spriteSheet.getSprite(1, 4);
-    sandSprite = spriteSheet.getSprite(1, 5);
+
+    final int startX = 11;
+    final int startY = 18;
+
+    waterSprites = List.generate(4, (y) {
+      return List.generate(4, (x) {
+        return spriteSheet.getSprite(startY + y, startX + x);
+      });
+    });
+
+    sandSprites = [
+      spriteSheet.getSprite(1, 5),
+      spriteSheet.getSprite(1, 7),
+      spriteSheet.getSprite(1, 8),
+      spriteSheet.getSprite(1, 9),
+    ];
   }
 
   Sprite getGrassSprite(int worldX, int worldY) {
     int tileHash = Object.hash(worldSeed, worldX, worldY);
     final random = Random(tileHash);
-    if (random.nextDouble() > 0.20) {
+    if (random.nextDouble() > 0.50) {
       return grassSprites.first;
     } else {
       int variationIndex = 1 + random.nextInt(grassSprites.length - 1);
@@ -50,8 +66,24 @@ class WorldComponent extends Component with HasGameReference<SurvivalGame> {
     }
   }
 
+  Sprite getSandSprite(int worldX, int worldY) {
+    int tileHash = Object.hash(worldSeed, worldX, worldY);
+    final random = Random(tileHash);
+    if (random.nextDouble() > 0.50) {
+      return sandSprites.first;
+    } else {
+      int variationIndex = 1 + random.nextInt(sandSprites.length - 1);
+      return sandSprites[variationIndex];
+    }
+  }
+
   /// Masks for auto-tiling sand sprites.
-  Sprite getSandSpriteForMask(SpriteSheet spriteSheet, int mask) {
+  Sprite getSandSpriteForMask(
+    SpriteSheet spriteSheet,
+    int mask,
+    int worldX,
+    int worldY,
+  ) {
     switch (mask) {
       // EDGES
       case 14:
@@ -87,7 +119,7 @@ class WorldComponent extends Component with HasGameReference<SurvivalGame> {
         return spriteSheet.getSprite(30, 6); // Solid Center
 
       default:
-        return sandSprite; // Fallback
+        return getSandSprite(worldX, worldY); // Fallback
     }
   }
 

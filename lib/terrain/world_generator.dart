@@ -94,6 +94,14 @@ class WorldGenerator extends WorldComponent {
     return getVisualZ(worldX, worldY) == 0;
   }
 
+  /// Uses a double modulo to get the correct sprite in a `SpriteArray2D`.
+  Sprite getWaterSprite(int worldX, int worldY) {
+    int patternX = (worldX % 4 + 4) % 4;
+    int patternY = (worldY % 4 + 4) % 4;
+
+    return waterSprites[patternY][patternX];
+  }
+
   int _getSandMask(int worldX, int worldY) {
     int mask = 0;
 
@@ -304,12 +312,12 @@ class WorldGenerator extends WorldComponent {
 
         if (myVisualZ == 0) {
           baseType = TileType.water;
-          baseSprite = waterSprite;
+          baseSprite = getWaterSprite(worldX, worldY);
         } else if (myVisualZ == 1) {
           baseType = TileType.sand;
           int mask = _getSandMask(worldX, worldY);
-          baseSprite = getSandSpriteForMask(spriteSheet, mask);
-          if (mask != 15) bgSprite = waterSprite;
+          baseSprite = getSandSpriteForMask(spriteSheet, mask, worldX, worldY);
+          if (mask != 15) bgSprite = getWaterSprite(worldX, worldY);
         } else {
           baseType = TileType.grass;
           baseSprite = getGrassSprite(worldX, worldY);
