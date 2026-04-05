@@ -37,7 +37,7 @@ class SurvivalGame extends Forge2DGame with HasKeyboardHandlerComponents {
 
     world.add(Tree(initialPosition: Vector2(32, 0)));
     pauseEngine();
-    await Future.delayed(const Duration(seconds: 2));
+    // await Future.delayed(const Duration(seconds: 2));
   }
 
   @override

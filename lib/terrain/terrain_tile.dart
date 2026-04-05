@@ -12,41 +12,72 @@ const Set obstacleTiles = {TileType.cliff, TileType.water};
 
 class TerrainTile extends BodyComponent<SurvivalGame> with ObstacleType {
   final Sprite sprite;
+  final Sprite? bgSprite;
   final TileType type;
   final List<Rect>? customHitboxes;
   final Vector2 initialPosition;
   final Vector2 tileDimension;
   final int? customPriority;
   late SpriteComponent visual;
+  final double elevation;
+  final int stackCount;
 
   TerrainTile({
     required this.sprite,
+    this.bgSprite,
     required this.type,
     this.customHitboxes,
     this.customPriority,
+    this.stackCount = 1,
     required this.initialPosition,
     required this.tileDimension,
+    required this.elevation,
   });
+
+  void setPriority() {
+    if (customPriority != null) {
+      priority = customPriority!;
+      return;
+    }
+    switch (type) {
+      case TileType.water:
+        priority = -3000000;
+      case TileType.sand:
+        priority = -2000000;
+      case TileType.grass:
+        priority = -1000000;
+      default:
+        priority = (initialPosition.y + tileDimension.y).toInt();
+    }
+  }
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     renderBody = false;
 
-    if (customPriority != null) {
-      priority = customPriority!;
-    } else if (type != TileType.cliff) {
-      priority = -99999;
-    } else {
-      priority = (initialPosition.y + tileDimension.y).toInt();
+    setPriority();
+
+    if (bgSprite != null) {
+      final bgVisual = SpriteComponent(
+        sprite: bgSprite,
+        size: tileDimension,
+        paint: Paint()..isAntiAlias = false,
+      );
+      add(bgVisual);
     }
 
-    visual = SpriteComponent(
-      sprite: sprite,
-      size: tileDimension,
-      paint: Paint()..isAntiAlias = false,
-    );
-    add(visual);
+    for (int i = 0; i < stackCount; i++) {
+      final layerVisual = SpriteComponent(
+        sprite: sprite,
+        size: tileDimension,
+        position: Vector2(0, -i * tileDimension.y),
+        paint: Paint()
+          ..isAntiAlias = false
+          ..color = Colors.white.withValues(alpha: renderBody ? 0.5 : 1.0),
+      );
+      add(layerVisual);
+    }
   }
 
   @override
