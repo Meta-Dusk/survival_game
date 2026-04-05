@@ -311,14 +311,17 @@ class WorldGenerator extends WorldComponent {
         int northVisualZ = getVisualZ(worldX, worldY - 1);
 
         if (myVisualZ == 0) {
+          // Water
           baseType = TileType.water;
           baseSprite = getWaterSprite(worldX, worldY);
         } else if (myVisualZ == 1) {
+          // Sand
           baseType = TileType.sand;
           int mask = _getSandMask(worldX, worldY);
           baseSprite = getSandSpriteForMask(spriteSheet, mask, worldX, worldY);
           if (mask != 15) bgSprite = getWaterSprite(worldX, worldY);
         } else {
+          // Grass Plateaus
           baseType = TileType.grass;
           baseSprite = getGrassSprite(worldX, worldY);
         }

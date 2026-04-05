@@ -56,7 +56,7 @@ class WorldComponent extends Component with HasGameReference<SurvivalGame> {
   }
 
   Sprite getGrassSprite(int worldX, int worldY) {
-    int tileHash = Object.hash(worldSeed, worldX, worldY);
+    int tileHash = Object.hash(worldSeed, worldX, worldY, "grass");
     final random = Random(tileHash);
     if (random.nextDouble() > 0.50) {
       return grassSprites.first;
@@ -67,7 +67,7 @@ class WorldComponent extends Component with HasGameReference<SurvivalGame> {
   }
 
   Sprite getSandSprite(int worldX, int worldY) {
-    int tileHash = Object.hash(worldSeed, worldX, worldY);
+    int tileHash = Object.hash(worldSeed, worldX, worldY, "sand");
     final random = Random(tileHash);
     if (random.nextDouble() > 0.50) {
       return sandSprites.first;
@@ -115,11 +115,8 @@ class WorldComponent extends Component with HasGameReference<SurvivalGame> {
       case 19:
         return spriteSheet.getSprite(31, 5); // Inner Bottom-Left
 
-      case 15:
-        return spriteSheet.getSprite(30, 6); // Solid Center
-
-      default:
-        return getSandSprite(worldX, worldY); // Fallback
+      default: // (Also case 15)
+        return getSandSprite(worldX, worldY); // Solid Center
     }
   }
 
