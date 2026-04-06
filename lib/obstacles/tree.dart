@@ -65,7 +65,11 @@ class Tree extends TreeComponent with TreeEffects, ObstacleType, Damageable {
         );
         game.world.addAll([
           for (int i = 0; i <= dropAmount; i++)
-            DroppedItem(item: wood, initialPosition: initialPosition),
+            DroppedItem(
+              item: wood,
+              initialPosition: initialPosition,
+              scatterOnSpawn: true,
+            ),
         ]);
         removeFromParent();
       },
