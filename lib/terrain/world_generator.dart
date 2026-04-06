@@ -1,6 +1,7 @@
 import 'package:fast_noise/fast_noise.dart' as fn;
 import 'package:flame/components.dart';
 import 'package:flame/image_composition.dart';
+import 'package:survival_game/obstacles/tree.dart';
 import 'package:survival_game/terrain/chunk.dart';
 import 'package:survival_game/terrain/terrain_tile.dart';
 import 'package:survival_game/terrain/world_component.dart';
@@ -205,6 +206,36 @@ class WorldGenerator extends WorldComponent {
       }
     }
     return false;
+  }
+
+  // --- THE 2x2 PROP VALIDATOR ---
+  bool _isValidTreeSpot(int startX, int startY) {
+    if (startX % 2 != 0 || startY % 2 != 0) return false;
+
+    int baseZ = getVisualZ(startX, startY);
+    if (baseZ < 2) return false; // Must be grass
+
+    // CHECK THE ENTIRE 2x2 FOOTPRINT
+    for (int i = 0; i < 2; i++) {
+      for (int j = 0; j < 2; j++) {
+        int checkX = startX + i;
+        int checkY = startY + j;
+
+        int myZ = getVisualZ(checkX, checkY);
+        int northZ = getVisualZ(checkX, checkY - 1);
+
+        // All 4 tiles must be perfectly flat (same elevation)
+        if (myZ != baseZ) return false;
+
+        // None of the 4 tiles can be hiding under a cliff
+        if (northZ > myZ) return false;
+
+        // None of the 4 tiles can be a ramp
+        if (_isRampAt(checkX, checkY)) return false;
+      }
+    }
+
+    return true;
   }
 
   /// Returns a list of Rects for cliff plateaus (the outlines).
@@ -464,6 +495,24 @@ class WorldGenerator extends WorldComponent {
                 stackCount: heightDifference,
               ),
             );
+          }
+        }
+
+        // PROPS
+        if (_isValidTreeSpot(worldX, worldY)) {
+          bool spawnTree =
+              Object.hash(worldSeed, worldX, worldY, 'tree') % 100 < 15;
+
+          if (spawnTree) {
+            final centerPos = Vector2(
+              (worldX * tileSize) + tileSize,
+              (worldY * tileSize) + tileSize,
+            );
+
+            final tree = Tree(initialPosition: centerPos);
+
+            game.world.add(tree);
+            chunk.tiles.add(tree);
           }
         }
       }

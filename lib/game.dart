@@ -4,7 +4,6 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:survival_game/core/game_fonts.dart';
 import 'package:survival_game/entities/player.dart';
-import 'package:survival_game/obstacles/tree.dart';
 import 'package:survival_game/terrain/world_generator.dart';
 
 class SurvivalGame extends Forge2DGame with HasKeyboardHandlerComponents {
@@ -35,7 +34,6 @@ class SurvivalGame extends Forge2DGame with HasKeyboardHandlerComponents {
     );
     camera.viewport.add(fpsCounter);
 
-    world.add(Tree(initialPosition: Vector2(32, 0)));
     pauseEngine();
     // await Future.delayed(const Duration(seconds: 2));
   }
