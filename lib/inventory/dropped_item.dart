@@ -12,8 +12,13 @@ class DroppedItem extends BodyComponent<SurvivalGame> {
   final Item item;
   final Vector2 initialPosition;
   late SpriteComponent visual;
+  final bool scatterOnSpawn;
 
-  DroppedItem({required this.item, required this.initialPosition});
+  DroppedItem({
+    required this.item,
+    required this.initialPosition,
+    this.scatterOnSpawn = false,
+  });
 
   @override
   Future<void> onLoad() async {
@@ -50,6 +55,15 @@ class DroppedItem extends BodyComponent<SurvivalGame> {
     visual.add(itemEffect);
   }
 
+  void applyRandomVelocity() {
+    final randomAngle = Random().nextDouble() * 2 * pi;
+    final randomSpeed = Random().nextDouble() * 40.0 + 20.0;
+    body.linearVelocity = Vector2(
+      cos(randomAngle) * randomSpeed,
+      sin(randomAngle) * randomSpeed,
+    );
+  }
+
   @override
   Body createBody() {
     final bodyDef = BodyDef(
@@ -64,19 +78,12 @@ class DroppedItem extends BodyComponent<SurvivalGame> {
     final fixtureDef = FixtureDef(shape, friction: 0.0, density: 1.0);
     body.createFixture(fixtureDef);
 
-    final randomAngle = Random().nextDouble() * 2 * pi;
-    final randomSpeed = Random().nextDouble() * 40.0 + 20.0;
-    final velocity = Vector2(
-      cos(randomAngle) * randomSpeed,
-      sin(randomAngle) * randomSpeed,
-    );
-
-    body.linearVelocity = velocity;
+    if (scatterOnSpawn) applyRandomVelocity();
     return body;
   }
 
   @override
   void update(double dt) {
-    priority = (body.position.y + 28).toInt();
+    priority = (body.position.y + visual.size.y + 16).toInt();
   }
 }
