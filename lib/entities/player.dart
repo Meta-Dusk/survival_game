@@ -38,6 +38,7 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
   final double moveSpeed = 80.0;
   final double rollSpeedMultiplier = 2.5;
   final double sprintSpeedMultiplier = 1.5;
+  final double swimSpeedMultiplier = 0.5;
   Vector2 velocity = Vector2.zero();
   int _waterContacts = 0;
   bool get _isSwimming => _waterContacts > 0;
@@ -87,10 +88,9 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
     if (!_isActionKeyPressed) _canAct = true;
 
     for (int i = 0; i < inventory.capacity && i < _hotbarKeys.length; i++) {
-      if (keysPressed.contains(_hotbarKeys[i])) {
-        inventory.setSlot(i);
-        break;
-      }
+      if (!keysPressed.contains(_hotbarKeys[i])) continue;
+      inventory.setSlot(i);
+      break;
     }
 
     if (!_isActing && !_isRolling) {
@@ -149,9 +149,8 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
     current = newState;
     for (var layer in layers) {
       layer.current = newState;
-      if (currentFrame != null) {
-        layer.animationTicker?.currentIndex = currentFrame;
-      }
+      if (currentFrame == null) continue;
+      layer.animationTicker?.currentIndex = currentFrame;
     }
   }
 
@@ -264,15 +263,11 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
       // Walking, Running, Swimming
     } else {
       double currentSpeed = moveSpeed;
-      if (_isSwimming) currentSpeed *= 0.5;
+      if (_isSwimming) currentSpeed *= swimSpeedMultiplier;
       body.linearVelocity = velocity * currentSpeed;
 
       if (velocity.isZero()) {
-        if (_isSwimming) {
-          _setState(PlayerState.swimming);
-        } else {
-          _setState(PlayerState.idle);
-        }
+        _setState(_isSwimming ? PlayerState.swimming : PlayerState.idle);
       } else {
         if (_isSwimming) {
           _setState(PlayerState.swimming);

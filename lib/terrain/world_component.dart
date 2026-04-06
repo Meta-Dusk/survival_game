@@ -16,8 +16,13 @@ class WorldComponent extends Component with HasGameReference<SurvivalGame> {
 
   @override
   Future<void> onLoad() async {
-    final tilesetImage = await game.images.load(Assets.tilesets.main);
-    spriteSheet = SpriteSheet(image: tilesetImage, srcSize: Vector2.all(16));
+    final tilesetImage = await game.images.load(Assets.tilesets.extrudedMain);
+    spriteSheet = SpriteSheet(
+      image: tilesetImage,
+      srcSize: Vector2.all(16),
+      margin: 1,
+      spacing: 2,
+    );
 
     grassSprites = [
       spriteSheet.getSprite(1, 1),

@@ -43,6 +43,6 @@ class SurvivalGame extends Forge2DGame with HasKeyboardHandlerComponents {
   @override
   void update(double dt) {
     super.update(dt);
-    camera.viewfinder.position = player.position;
+    camera.viewfinder.position = player.position..round();
   }
 }

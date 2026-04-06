@@ -255,4 +255,5 @@ class _Titles {
 class _Tilesets {
   const _Tilesets();
   final String main = "tilesets/spr_tileset_sunnysideworld_16px.png";
+  final String extrudedMain = "tilesets/extruded_tileset.png";
 }
