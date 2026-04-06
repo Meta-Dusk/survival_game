@@ -1,4 +1,4 @@
-import 'package:survival_game/item.dart';
+import 'package:survival_game/inventory/item.dart';
 import 'package:flutter/material.dart';
 
 class Inventory {

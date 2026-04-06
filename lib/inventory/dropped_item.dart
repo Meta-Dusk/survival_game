@@ -6,7 +6,7 @@ import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
-import 'package:survival_game/item.dart';
+import 'package:survival_game/inventory/item.dart';
 
 class DroppedItem extends BodyComponent<SurvivalGame> {
   final Item item;

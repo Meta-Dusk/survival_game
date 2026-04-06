@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:survival_game/core/game_fonts.dart';
-import 'package:survival_game/item.dart';
+import 'package:survival_game/inventory/item.dart';
 import 'package:survival_game/entities/player.dart';
 
 class HotbarUi extends StatelessWidget {

@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:survival_game/components/player_component.dart';
 import 'package:survival_game/components/player_effects.dart';
 import 'package:survival_game/core/damage_types.dart';
-import 'package:survival_game/damageable.dart';
-import 'package:survival_game/item.dart';
+import 'package:survival_game/core/damageable.dart';
+import 'package:survival_game/inventory/item.dart';
 import 'package:survival_game/terrain/terrain_tile.dart';
 
 class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {

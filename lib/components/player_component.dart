@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:survival_game/components/shadows.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
-import 'package:survival_game/inventory.dart';
+import 'package:survival_game/inventory/inventory.dart';
 
 enum PlayerState {
   attacking,
