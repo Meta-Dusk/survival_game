@@ -2,6 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
+import 'package:survival_game/components/shadows.dart';
 import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
 import 'package:survival_game/inventory.dart';
@@ -114,6 +115,7 @@ class PlayerComponent extends BodyComponent<SurvivalGame> with KeyboardHandler {
     await super.onLoad();
     renderBody = false;
 
+    add(PixelShadow(position: Vector2(0, 10)));
     await _addLayer(Assets.entities.player.base);
     await _addLayer(Assets.entities.player.hair.bowlHair);
     await _addLayer(Assets.entities.player.tools);

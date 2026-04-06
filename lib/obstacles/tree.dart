@@ -13,12 +13,17 @@ import 'package:survival_game/item.dart';
 import 'package:survival_game/obstacles/obstacle.dart';
 
 class Tree extends TreeComponent with TreeEffects, ObstacleType, Damageable {
-  double health = 5.0;
+  double health;
+  int dropAmount;
 
-  Tree({required super.initialPosition});
+  Tree({
+    required super.initialPosition,
+    this.health = 5.0,
+    this.dropAmount = 3,
+  });
 
   @override
-  void takeDamage(double amount, DamageType type) {
+  void takeDamage({double amount = 1, DamageType type = DamageType.unarmed}) {
     if (type != DamageType.chopping) return;
 
     health -= amount;
@@ -38,12 +43,12 @@ class Tree extends TreeComponent with TreeEffects, ObstacleType, Damageable {
     spawnWoodChips();
 
     if (health > 0) {
-      final swayEffect = SequenceEffect([
+      final shrinkEffect = SequenceEffect([
         ScaleEffect.by(Vector2(0.9, 0.9), EffectController(duration: 0.05)),
         ScaleEffect.by(Vector2(1.0, 1.1), EffectController(duration: 0.1)),
         ScaleEffect.to(Vector2(1.0, 1.0), EffectController(duration: 0.05)),
       ]);
-      visual.add(swayEffect);
+      visual.add(shrinkEffect);
       return;
     }
     debugPrint("Ded");
@@ -59,7 +64,7 @@ class Tree extends TreeComponent with TreeEffects, ObstacleType, Damageable {
           iconPath: Assets.elements.crops.wood,
         );
         game.world.addAll([
-          for (int i = 0; i <= 3; i++)
+          for (int i = 0; i <= dropAmount; i++)
             DroppedItem(item: wood, initialPosition: initialPosition),
         ]);
         removeFromParent();

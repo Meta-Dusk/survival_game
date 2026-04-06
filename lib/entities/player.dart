@@ -34,6 +34,8 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
   bool _isJumping = false;
   bool _hasDealtDamage = false;
 
+  bool get canMoveAction => !_isJumping && !_isSwimming;
+
   Vector2 _rollDirection = Vector2.zero();
   final double moveSpeed = 80.0;
   final double rollSpeedMultiplier = 2.5;
@@ -78,6 +80,12 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
     debugPrint("Setting camera viewfinder zoom to: ${viewFinder.zoom}");
   }
 
+  void resetAnimationLayer(PlayerState state) {
+    for (var layer in layers) {
+      layer.animationTickers?[state]?.reset();
+    }
+  }
+
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     velocity = Vector2.zero();
@@ -90,6 +98,7 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
     for (int i = 0; i < inventory.capacity && i < _hotbarKeys.length; i++) {
       if (!keysPressed.contains(_hotbarKeys[i])) continue;
       inventory.setSlot(i);
+      _hasDealtDamage = false;
       break;
     }
 
@@ -101,30 +110,19 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
       if (keysPressed.contains(LogicalKeyboardKey.keyA)) velocity.x = -step;
       if (keysPressed.contains(LogicalKeyboardKey.keyD)) velocity.x = step;
 
-      if (keysPressed.contains(LogicalKeyboardKey.keyV) &&
-          !_isJumping &&
-          !_isSwimming) {
+      if (keysPressed.contains(LogicalKeyboardKey.keyV) && canMoveAction) {
         _isRolling = true;
 
-        if (velocity.isZero()) {
-          _rollDirection = Vector2(isFlippedHorizontally ? -1.0 : 1.0, 0.0);
-        } else {
-          _rollDirection = velocity.normalized();
-        }
+        _rollDirection = velocity.isZero()
+            ? Vector2(isFlippedHorizontally ? -1.0 : 1.0, 0.0)
+            : velocity.normalized();
 
-        for (var layer in layers) {
-          layer.animationTickers?[PlayerState.rolling]?.reset();
-        }
+        resetAnimationLayer(PlayerState.rolling);
       }
 
-      if (keysPressed.contains(LogicalKeyboardKey.space) &&
-          !_isJumping &&
-          !_isSwimming) {
+      if (keysPressed.contains(LogicalKeyboardKey.space) && canMoveAction) {
         _isJumping = true;
-
-        for (var layer in layers) {
-          layer.animationTickers?[PlayerState.jumping]?.reset();
-        }
+        resetAnimationLayer(PlayerState.jumping);
       }
 
       if (velocity.x != 0 || velocity.y != 0) {
@@ -154,6 +152,11 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
     }
   }
 
+  SpriteAnimationTicker? getCurrentTicker() {
+    if (layers.isEmpty) return null;
+    return layers.first.animationTickers?[current];
+  }
+
   @override
   void update(double dt) {
     final holding = inventory.activeItem;
@@ -168,18 +171,15 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
       _isActing = true;
       if (holding?.autoSwing == false) _canAct = false;
       final targetState = holding?.animationState ?? PlayerState.attacking;
-      for (var layer in layers) {
-        layer.animationTickers?[targetState]?.reset();
-      }
+      resetAnimationLayer(targetState);
     }
 
     // Rolling or Dodging
     if (_isRolling) {
       _setState(PlayerState.rolling);
-      SpriteAnimationTicker? ticker;
       double currentSpeed = moveSpeed;
 
-      if (layers.isNotEmpty) ticker = layers.first.animationTickers?[current];
+      final ticker = getCurrentTicker();
 
       if (ticker != null) {
         if (ticker.currentIndex >= 2 && ticker.currentIndex <= 5) {
@@ -200,8 +200,7 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
       // Jumping
     } else if (_isJumping) {
       _setState(PlayerState.jumping);
-      SpriteAnimationTicker? ticker;
-      if (layers.isNotEmpty) ticker = layers.first.animationTickers?[current];
+      final ticker = getCurrentTicker();
 
       body.linearVelocity = velocity * moveSpeed;
 
@@ -221,8 +220,7 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
       _setState(targetState);
       body.linearVelocity = Vector2.zero();
 
-      SpriteAnimationTicker? ticker;
-      if (layers.isNotEmpty) ticker = layers.first.animationTickers?[current];
+      final ticker = getCurrentTicker();
 
       if (ticker != null &&
           {5, 6}.contains(ticker.currentIndex) &&
@@ -248,9 +246,7 @@ class Player extends PlayerComponent with PlayerEffects, ContactCallbacks {
           );
           game.world.add(debugSquare);
           Future.delayed(const Duration(milliseconds: 200), () {
-            if (debugSquare.isMounted) {
-              debugSquare.removeFromParent();
-            }
+            if (debugSquare.isMounted) debugSquare.removeFromParent();
           });
         }
       }
@@ -330,13 +326,11 @@ class AttackQueryCallback extends QueryCallback {
     if (userData is Damageable) {
       double damageAmount = 1.0;
 
-      if (weapon is Equipment) {
-        damageAmount = (weapon as Equipment).damage;
-      }
+      if (weapon is Equipment) damageAmount = (weapon as Equipment).damage;
 
       userData.takeDamage(
-        damageAmount,
-        weapon?.damageType ?? DamageType.unarmed,
+        amount: damageAmount,
+        type: weapon?.damageType ?? DamageType.unarmed,
       );
       return false;
     }
