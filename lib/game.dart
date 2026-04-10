@@ -1,18 +1,24 @@
 import 'package:flame/components.dart';
 import 'package:flame/input.dart';
+import 'package:flame/sprite.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
+import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/core/game_fonts.dart';
 import 'package:survival_game/entities/player.dart';
 import 'package:survival_game/terrain/world_generator.dart';
 
 class SurvivalGame extends Forge2DGame with HasKeyboardHandlerComponents {
-  final Player player = Player();
+  final player = Player();
+  late SpriteSheet spriteSheet;
 
   SurvivalGame() : super(gravity: Vector2.zero());
 
   @override
   Future<void> onLoad() async {
+    final tilesetImage = await images.load(Assets.tilesets.main);
+    spriteSheet = SpriteSheet(image: tilesetImage, srcSize: Vector2.all(16));
+
     maxTranslation = 8.0;
     await world.add(WorldGenerator());
     world.add(player);
@@ -41,6 +47,7 @@ class SurvivalGame extends Forge2DGame with HasKeyboardHandlerComponents {
   @override
   void update(double dt) {
     super.update(dt);
-    camera.viewfinder.position = player.position..round();
+    camera.viewfinder.position = player.position;
+    camera.viewfinder.position.round();
   }
 }

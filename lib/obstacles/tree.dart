@@ -5,11 +5,9 @@ import 'package:flame/effects.dart';
 import 'package:flutter/material.dart';
 import 'package:survival_game/components/tree_component.dart';
 import 'package:survival_game/components/tree_effects.dart';
-import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/core/damageable.dart';
 import 'package:survival_game/inventory/dropped_item.dart';
 import 'package:survival_game/core/damage_types.dart';
-import 'package:survival_game/inventory/item.dart';
 import 'package:survival_game/obstacles/obstacle.dart';
 
 class Tree extends TreeComponent with TreeEffects, ObstacleType, Damageable {
@@ -57,16 +55,10 @@ class Tree extends TreeComponent with TreeEffects, ObstacleType, Damageable {
       Vector2.zero(),
       EffectController(duration: 0.2),
       onComplete: () {
-        final wood = Item(
-          id: "wood",
-          name: "Wood",
-          category: ItemCategory.resource,
-          iconPath: Assets.elements.crops.wood,
-        );
         game.world.addAll([
           for (int i = 0; i <= dropAmount; i++)
             DroppedItem(
-              item: wood,
+              itemType: .wood,
               initialPosition: initialPosition,
               scatterOnSpawn: true,
             ),

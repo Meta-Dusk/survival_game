@@ -4,18 +4,20 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame_forge2d/flame_forge2d.dart';
 import 'package:flutter/material.dart';
-import 'package:survival_game/core/game_assets.dart';
 import 'package:survival_game/game.dart';
-import 'package:survival_game/inventory/item.dart';
+import 'package:survival_game/inventory/item_registry.dart';
 
 class DroppedItem extends BodyComponent<SurvivalGame> {
-  final Item item;
+  final ItemType itemType;
+  final int count;
   final Vector2 initialPosition;
+  late ItemData data;
   late SpriteComponent visual;
   final bool scatterOnSpawn;
 
   DroppedItem({
-    required this.item,
+    required this.itemType,
+    this.count = 1,
     required this.initialPosition,
     this.scatterOnSpawn = false,
   });
@@ -23,20 +25,20 @@ class DroppedItem extends BodyComponent<SurvivalGame> {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    renderBody = false;
+    renderBody = true;
 
-    final sprite = await game.loadSprite(
-      item.iconPath ?? Assets.elements.crops.egg,
-    );
+    data = ItemRegistry.get(itemType);
+    final itemSprite = game.spriteSheet.getSprite(data.sheetY, data.sheetX);
+
     visual = SpriteComponent(
-      sprite: sprite,
-      size: Vector2.all(12),
-      anchor: Anchor.center,
+      sprite: itemSprite,
+      size: .all(16),
+      anchor: .center,
     );
     add(visual);
 
     final itemEffect = ScaleEffect.to(
-      Vector2.all(1.0),
+      .all(1.0),
       EffectController(duration: 0.3, curve: Curves.easeOutBack),
       onComplete: () {
         final bobbingEffect = MoveByEffect(
@@ -51,11 +53,11 @@ class DroppedItem extends BodyComponent<SurvivalGame> {
         visual.add(bobbingEffect);
       },
     );
-    visual.scale = Vector2.zero();
+    visual.scale = .zero();
     visual.add(itemEffect);
   }
 
-  void applyRandomVelocity() {
+  void applyRandomVelocity(Body body) {
     final randomAngle = Random().nextDouble() * 2 * pi;
     final randomSpeed = Random().nextDouble() * 40.0 + 20.0;
     body.linearVelocity = Vector2(
@@ -68,7 +70,7 @@ class DroppedItem extends BodyComponent<SurvivalGame> {
   Body createBody() {
     final bodyDef = BodyDef(
       position: initialPosition,
-      type: BodyType.dynamic,
+      type: .dynamic,
       linearDamping: 5.0,
     );
     final body = world.createBody(bodyDef);
@@ -78,7 +80,7 @@ class DroppedItem extends BodyComponent<SurvivalGame> {
     final fixtureDef = FixtureDef(shape, friction: 0.0, density: 1.0);
     body.createFixture(fixtureDef);
 
-    if (scatterOnSpawn) applyRandomVelocity();
+    if (scatterOnSpawn) applyRandomVelocity(body);
     return body;
   }
 
