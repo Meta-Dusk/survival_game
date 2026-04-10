@@ -25,7 +25,7 @@ class DroppedItem extends BodyComponent<SurvivalGame> {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    renderBody = true;
+    renderBody = false;
 
     data = ItemRegistry.get(itemType);
     final itemSprite = game.spriteSheet.getSprite(data.sheetY, data.sheetX);
